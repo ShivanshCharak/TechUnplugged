@@ -1,3 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Boldonse&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@theme {
+    --font-boldonse: 'Boldonse', sans-serif;
+}
+
+body {
+    background-color: #000000;
+    color: white;
+    font-family: "Inter";
+}
+

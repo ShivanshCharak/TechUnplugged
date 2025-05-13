@@ -6,7 +6,8 @@ import { BACKEND_URL } from "../config";
 export interface Blog {
     "content": string;
     "title": string;
-    "id": number
+    "id": number;
+    "url":string
     "author": {
         "name": string
     }
@@ -44,10 +45,11 @@ export const useBlogs = () => {
                 Authorization: localStorage.getItem("token")
             }
         })
-            .then(response => {
-                setBlogs(response.data.blogs);
-                setLoading(false);
-            })
+        .then(response => {
+            setBlogs(response.data.blogs);
+            setLoading(false);
+        })
+        {console.log(blogs)};
     }, [])
 
     return {

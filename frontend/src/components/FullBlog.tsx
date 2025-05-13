@@ -1,12 +1,17 @@
 import { Blog } from "../hooks"
 import { Appbar } from "./Appbar"
 import { Avatar } from "./BlogCard"
-
+import  DOMPurify  from "dompurify"
+import '../pages/styles.css'
 export const FullBlog = ({ blog }: {blog: Blog}) => {
+
     return <div>
         <Appbar />
+
         <div className="flex justify-center">
             <div className="grid grid-cols-12 px-10 w-full pt-200 max-w-screen-xl pt-12">
+                
+                
                 <div className="col-span-8">
                     <div className="text-5xl font-extrabold">
                         {blog.title}
@@ -14,11 +19,12 @@ export const FullBlog = ({ blog }: {blog: Blog}) => {
                     <div className="text-slate-500 pt-2">
                         Post on 2nd December 2023
                     </div>
-                    <div className="pt-4">
-                        {blog.content}
+                    <img src={blog.url} className="mt-6 rounded-lg" alt="" />
+                    <div className="pt-4 text-lg/7 ">
+                       <div dangerouslySetInnerHTML={{__html:DOMPurify.sanitize(blog.content)}}/>
                     </div>
                 </div>
-                <div className="col-span-4">
+                <div className="col-span-4 ml-10">
                     <div className="text-slate-600 text-lg">
                         Author
                     </div>

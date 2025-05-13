@@ -24,7 +24,7 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
         }
     }
     
-    return <div className="h-screen flex justify-center flex-col">
+    return <div className="h-screen flex justify-center flex-col bg-slate-780">
         <div className="flex justify-center">
             <div>
                 <div className="px-10">
@@ -39,19 +39,19 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
                     </div>
                 </div>
                 <div className="pt-8">
-                    {type === "signup" ? <LabelledInput label="Name" placeholder="Harkirat Singh..." onChange={(e) => {
+                    {type === "signup" ? <LabelledInput label="Name" placeholder="Jhon donkey..." onChange={(e) => {
                         setPostInputs({
                             ...postInputs,
                             name: e.target.value
                         })
                     }} /> : null}
-                    <LabelledInput label="email" placeholder="harkirat@gmail.com" onChange={(e) => {
+                    <LabelledInput label="email" placeholder="john@gmail.com" onChange={(e) => {
                         setPostInputs({
                             ...postInputs,
                             email: e.target.value
                         })
                     }} />
-                    <LabelledInput label="Password" type={"password"} placeholder="123456" onChange={(e) => {
+                    <LabelledInput label="Password" type={"password"} placeholder="******" onChange={(e) => {
                         setPostInputs({
                             ...postInputs,
                             password: e.target.value
@@ -73,7 +73,7 @@ interface LabelledInputType {
 
 function LabelledInput({ label, placeholder, onChange, type }: LabelledInputType) {
     return <div>
-        <label className="block mb-2 text-sm text-black font-semibold pt-4">{label}</label>
-        <input onChange={onChange} type={type || "text"} id="first_name" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder={placeholder} required />
+        <label className="block mb-2 text-sm text-white font-semibold pt-4">{label}</label>
+        <input onChange={onChange} type={type || "text"} id="first_name" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-4" placeholder={placeholder} required />
     </div>
 }
