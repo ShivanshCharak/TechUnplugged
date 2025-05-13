@@ -7,6 +7,7 @@ const app = new Hono<{
   Bindings: {
     DATABASE_URL: string;
     JWT_SECRET: string;
+    OPENAI_API_KEY:string
   }
 }>();
 app.use('/*', cors())
