@@ -1,18 +1,48 @@
-import OpenAI from "openai/index.mjs";
-const openai = new OpenAI({ apiKey: c.env.OPENAI_API_KEY });
+import { Groq } from "groq-sdk";
+import { Hono } from "hono";
 
-router.post("/chatbot", async (req, res) => {
-  const userMessage = req.body.message;
+type Bindings = {
+  DATABASE_URL: string;
+  JWT_SECRET: string;
+  GROQ_API_KEY: string;
+};
 
+type Variables = {
+  userId: string;
+};
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+app.post("/chatbot", async (c) => {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: userMessage }],
+    // Initialize Groq client with API key from environment
+    const groq = new Groq({ apiKey: c.env.GROQ_API_KEY });
+
+    // Parse the request body
+    const { message } = await c.req.json();
+
+    if (!message) {
+      return c.json({ error: "Message is required" }, 400);
+    }
+
+    // Create chat completion
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{
+        role: "user",
+        content: message,
+      }],
+      model: "llama3-70b-8192", // Updated to current Groq model name
     });
-    res.json({ reply: response.choices[0].message.content });
-  } catch (err) {
-    res.status(500).json({ error: "Something went wrong" });
+
+    // Return the AI response
+    return c.json({
+      response: chatCompletion.choices[0]?.message?.content || "No response"
+    });
+
+  } catch (error) {
+    console.error("Error in chatbot endpoint:", error);
+    return c.json({ error: "Internal server error" }, 500);
   }
 });
 
-module.exports = router;
+export default app;

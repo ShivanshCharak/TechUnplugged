@@ -18,33 +18,33 @@ export const blogRouter = new Hono<{
 }>();
 
 // -------------------- MIDDLEWARE --------------------
-blogRouter.use(
-  "/*",
-  cors({
-    origin: "*",
-    allowMethods: ["GET", "POST", "PUT", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"]
-  }),
-  async (c, next) => {
-    const authHeader = c.req.header("authorization") || "";
-    const token = authHeader.split(' ')[1]
-    console.log(token)
-    try {
-      const user = await verify(token, c.env.JWT_SECRET);
-      console.log(user)
-      if (user) {
-        c.set("userId", user.id);
-        await next();
-      } else {
-        c.status(403);
-        return c.json({ message: "You are not logged in" });
-      }
-    } catch {
-      c.status(403);
-      return c.json({ message: "You are not logged in" });
-    }
-  }
-);
+// blogRouter.use(
+//   "/*",
+//   cors({
+//     origin: "*",
+//     // allowMethods: ["GET", "POST", "PUT", "OPTIONS"],
+//     // allowHeaders: ["Content-Type", "Authorization"]
+//   }),
+//   // async (c, next) => {
+//   //   const authHeader = c.req.header("authorization") || "";
+//   //   const token = authHeader.split(' ')[1]
+//   //   console.log(token)
+//   //   try {
+//   //     const user = await verify(token, c.env.JWT_SECRET);
+//   //     console.log(user)
+//   //     if (user) {
+//   //       c.set("userId", user.id);
+//   //       await next();
+//   //     } else {
+//   //       c.status(403);
+//   //       return c.json({ message: "You are not logged in" });
+//   //     }
+//   //   } catch {
+//   //     c.status(403);
+//   //     return c.json({ message: "You are not logged in" });
+//   //   }
+//   // }
+// );
 
 // -------------------- CHATBOT --------------------
 blogRouter.post("/chatbot", async (c) => {
@@ -52,13 +52,13 @@ blogRouter.post("/chatbot", async (c) => {
   const userMessage = body.message;
 
   const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1", // optional, depending on what you're using
+    baseURL: "https://openrouter.ai/api/v1", 
     apiKey: c.env.OPENAI_API_KEY
   });
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // or openrouter model like "deepseek/deepseek-v3-base:free"
+      model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: userMessage }],
     });
 
