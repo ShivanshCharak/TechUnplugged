@@ -1,3 +1,5 @@
+import { Groq } from "groq-sdk";
+import { Hono } from "hono";
 import { createBlogInput, updateBlogInput } from "@100xdevs/medium-common";
 import { cors } from "hono/cors";
 import { PrismaClient } from "@prisma/client/edge";
@@ -10,7 +12,7 @@ export const blogRouter = new Hono<{
   Bindings: {
     DATABASE_URL: string;
     JWT_SECRET: string;
-    OPENAI_API_KEY: string;
+    GROQ_API_KEY: string;
   },
   Variables: {
     userId: string;
@@ -47,40 +49,68 @@ export const blogRouter = new Hono<{
 // );
 
 // -------------------- CHATBOT --------------------
+
+type Bindings = {
+  DATABASE_URL: string;
+  JWT_SECRET: string;
+  GROQ_API_KEY: string;
+};
+
+type Variables = {
+  userId: string;
+};
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+export default app;
 blogRouter.post("/chatbot", async (c) => {
   const body = await c.req.json();
   const userMessage = body.message;
 
-  const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1", 
-    apiKey: c.env.OPENAI_API_KEY
-  });
-
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: userMessage }],
+    // Initialize Groq client with API key from environment
+    const groq = new Groq({ apiKey: c.env.GROQ_API_KEY });
+    console.log(groq)
+
+    // Parse the request body
+    const { message } = await c.req.json();
+
+    if (!message) {
+      return c.json({ error: "Message is required" }, 400);
+    }
+
+    // Create chat completion
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{
+        role: "user",
+        content: userMessage,
+      }],
+      model: "llama3-70b-8192", // Updated to current Groq model name
+    });
+    
+    // Return the AI response
+    return c.json({
+      response: chatCompletion.choices[0]?.message?.content || "No response"
     });
 
-    return c.json({ reply: completion.choices[0].message.content });
-  } catch (err) {
-    console.error("OpenAI error:", err);
-    c.status(500);
-    return c.json({ error: "Something went wrong with the chatbot" });
+  } catch (error) {
+    console.error("Error in chatbot endpoint:", error);
+    return c.json({ error: "Internal server error" }, 500);
   }
+
 });
 
 // -------------------- CREATE BLOG --------------------
 blogRouter.post("/", async (c) => {
   const body = await c.req.json();
   const { success } = createBlogInput.safeParse(body);
-
+console.log("await",body)
   if (!success) {
     c.status(411);
     return c.json({ message: "Inputs not correct" });
   }
 
-  const authorId = c.get("userId");
+  
 
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
@@ -91,7 +121,7 @@ blogRouter.post("/", async (c) => {
       title: body.title,
       content: body.content,
       url: body.url,
-      authorId: Number(authorId),
+      authorId: Number(body.id),
     },
   });
 

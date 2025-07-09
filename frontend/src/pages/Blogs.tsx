@@ -1,5 +1,7 @@
 import { Appbar } from "../components/Appbar"
+import { BlogAside } from "../components/BlogAside";
 import { BlogCard } from "../components/BlogCard"
+import BlogHeader from "../components/BlogHeader";
 import { BlogSkeleton } from "../components/BlogSkeleton";
 import { useBlogs } from "../hooks";
 
@@ -9,7 +11,7 @@ export const Blogs = () => {
     if (loading) {
         return <div>
             <Appbar /> 
-            <div  className="flex justify-center">
+            <div className="flex justify-center">
                 <div>
                     <BlogSkeleton />
                     <BlogSkeleton />
@@ -23,12 +25,13 @@ export const Blogs = () => {
 
     return <div>
         <Appbar />
-        <div className="flex justify-center items-center mt-10">
-        <input type="text" className="border-1 border-[#1e1d1d] rounded-md bg-[#131212] text-white focus:outline-none w-[30%]  p-5" placeholder="Type here to search for the blog" />
-
+        {/* Changed this container to properly center its children */}
+        <div className="flex  w-full mt-10">
+            <div className="flex justify-center w-[70%]">
+                <BlogHeader/>
+            </div>
         </div>
-        <div  className="flex justify-center">
-
+        <div className="flex  w-[70%] mx-auto mt-10">  {/* Added mx-auto here */}
             <div>
                 {blogs.map(blog => <BlogCard
                     id={blog.id}
@@ -39,7 +42,7 @@ export const Blogs = () => {
                     publishedDate={"2nd Feb 2024"}
                 />)}
             </div>
+            <BlogAside/>
         </div>
     </div>
 }
-

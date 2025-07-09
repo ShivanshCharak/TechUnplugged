@@ -5,38 +5,39 @@ import axios from "axios";
 import { BACKEND_URL } from "../config";
 import './styles.css';
 import { useNavigate } from "react-router-dom";
-import { ChangeEvent, useEffect, useState } from "react";
+import {useEffect, useState } from "react";
 import Breadcrumbs from "../components/Breadcrumbs";
 import Tiptap from "./TextEditor";
 import UtilitiesSidebar from "../components/Sidebar";
 import Delete from '../assets/delete.svg';
 
 export const Publish = () => {
-    const [title, setTitle] = useState("");
+    const [title, setTitle] = useState("Add title");
     const [description, setDescription] = useState("");
     const [preview, setPreview] = useState<string | null>(null);
     const navigate = useNavigate();
 
+   
     const DocumentOutline = ({ content }: { content: string }) => {
         const [headings, setHeadings] = useState<Array<{ level: number; text: string }>>([]);
-      
+        
         useEffect(() => {
-          if (content) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(content, 'text/html');
-            const headingElements = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
-            
-            const extractedHeadings = Array.from(headingElements).map(el => ({
+            if (content) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(content, 'text/html');
+                const headingElements = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                
+                const extractedHeadings = Array.from(headingElements).map(el => ({
               level: parseInt(el.tagName.substring(1)),
               text: el.textContent || ''
             }));
             
-             setHeadings(extractedHeadings);
-            }
-        }, [content]);
-        
-        return (
-            <div className="mt-8">
+            setHeadings(extractedHeadings);
+        }
+    }, [content]);
+    
+    return (
+        <div className="mt-8">
             <h3 className="text-sm font-semibold text-white mb-2 w-[200px]">Table of contents</h3>
             <div className="space-y-1">
                 <h3>{title}</h3>
@@ -51,7 +52,7 @@ export const Publish = () => {
                       heading.level === 2 ? 'text-[16px]/6 ' : 
                       'text-[16px]'
                     }`}
-                    //    style={{ paddingLeft: `${(heading.level - 1) * 12}px` }}
+                    
                     >
                 {heading.text}
             
@@ -61,8 +62,8 @@ export const Publish = () => {
             </div>
           </div>
         );
-      };
-      
+    };
+    
     
     const uploadToCloudinary = async (base64: string|null) => {
         const base64Data = base64?.replace(/^data:image\/[a-z]+;base64,/, "");
@@ -80,7 +81,7 @@ export const Publish = () => {
             return null;
         }
     };
-
+    
     return (
         <div className="flex min-h-screen bg-[#0a0a0b]">
             {/* Sidebar */}
@@ -92,24 +93,30 @@ export const Publish = () => {
             <div className="ml-[400px] flex-1">
                 {/* Top Bar with Breadcrumbs and Actions */}
                 <div className="flex justify-between items-center p-4 border-b border-[#1d1d1d]">
-                    <Breadcrumbs/>
+                    <Breadcrumbs heading={title}/>
                     
                     <div className="flex gap-4">
                         {/* Delete Draft Button */}
-                        {/* <button className="flex items-center gap-2 bg-[#191b1e] px-4 py-2 rounded-lg cursor-pointer duration-200 ease-in hover:bg-white hover:text-black">
+                        <button className="flex items-center gap-2 bg-[#191b1e] px-4 py-2 rounded-lg cursor-pointer duration-200 ease-in hover:bg-white hover:text-black">
                             <img className='w-[17px]' src={Delete} alt="Delete" />
                             <span className='text-xs font-semibold'>Delete Draft</span>
-                        </button> */}
+                        </button>
 
                         {/* Publish Button */}
+                    
                         <button
                             onClick={async () => {
+                                
+                                const id =JSON.parse(localStorage.getItem('jwt'))
+                      
+                               
                                 if (preview) {
                                     const url = await uploadToCloudinary(preview);
                                     if (url) {
                                         const response = await axios.post(
                                             `${BACKEND_URL}/api/v1/blog`,
                                             {
+                                                id:id.id,
                                                 title,
                                                 content: description,
                                                 url, 
@@ -140,12 +147,12 @@ export const Publish = () => {
                         <DocumentOutline content={description}/>
                     </div>
                     <div className="w-[60%]  border-r-2 border-[#1d1d1d] p-8">
-                        <div className="flex justify-between items-center mb-8">
-                            <div className={`font-semibold text-md text-gray-600 cursor-pointer h-[50px] rounded-md ${preview ? "mb-[400px]" : ""}`}>
+                        <div className="flex flex-col mb-8">
+                            <div className={`font-semibold text-md text-gray-600 cursor-pointer h-[50px] rounded-md`}>
                                 <FileUpload preview={preview} setPreview={setPreview} />
                             </div>
                             {preview && (
-                                <div className="mt-6">
+                                <div className=" flex">
                                     <img src={preview} alt="Preview" className="w-full h-[300px] object-cover rounded-md" />
                                 </div>
                             )}
@@ -154,7 +161,7 @@ export const Publish = () => {
                         <input
                             onChange={(e) => setTitle(e.target.value)}
                             type="text"
-                            className="w-full border-none bg-transparent text-[3rem] font-bold text-white outline-none mb-8"
+                            className="w-full border-none bg-transparent text-[3rem] font-bold text-white outline-none"
                             placeholder="Article Title..."
                         />
 

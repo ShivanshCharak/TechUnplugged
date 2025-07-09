@@ -17,6 +17,7 @@ app.post("/chatbot", async (c) => {
   try {
     // Initialize Groq client with API key from environment
     const groq = new Groq({ apiKey: c.env.GROQ_API_KEY });
+    console.log(groq)
 
     // Parse the request body
     const { message } = await c.req.json();

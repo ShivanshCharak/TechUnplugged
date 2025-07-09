@@ -133,8 +133,8 @@ export default function Tiptap({ onChange,preview }: { onChange: (content: strin
         <EditorContent
           editor={editor}
           ref={editorRef}
-          className="w-full overflow-hidden resize-none ml-[-50px]"
-          style={{ height, lineHeight: `${lineHeight}px` }}
+          className="text-white w-full  overflow-hidden resize-none ml-[-50px]"
+          style={{ height, lineHeight: `${lineHeight}px`, color:"white" }}
         />
       </div>
     </div>
