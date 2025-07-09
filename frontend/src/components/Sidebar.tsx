@@ -22,8 +22,8 @@ export default function UtilitiesSidebar() {
         });
         console.log(localStorage.getItem('token'))
         const data = await res.json();
-        console.log("Bot reply:", data.reply);
-        setMessages((prev) => ([...prev, { sender: "bot", text: data.reply }]))
+      
+        setMessages((prev) => ([...prev, { sender: "bot", text: data.response }]))
         // You can set state here to show the reply in UI if needed
       } catch (error) {
         console.error("Error talking to chatbot:", error);

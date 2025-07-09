@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+
 interface BlogCardProps {
     authorName: string;
     title: string;
     content: string;
     publishedDate: string;
     id: number;
-    url:string;
+    url: string;
 }
 
 export const BlogCard = ({
@@ -16,49 +17,73 @@ export const BlogCard = ({
     url,
     publishedDate
 }: BlogCardProps) => {
-    return <Link to={`/blog/${id}`}>
-        <div className=" mt-10 flex justify-between  w-[100rem] h-[20rem]  p-[20px] bg-[#0B0B0B] border-[1px] border-[#1A1717]">
-            <div>
-                <div className="flex items-center">
-                    <Avatar name={authorName} />
-                    <div >{authorName.toUpperCase()}</div>
-                    <div>
-                        <Circle />
-                    </div>
-                    <div >
-                        {publishedDate}
-                    </div>
-                </div>
-                <div className="text-3xl m-4">
-                    {title}
-                </div>
-                <div className="whitespace-pre-line m-5">
-                    {/* {content.slice(0, 100) + "..."} */}
-                    <div dangerouslySetInnerHTML={{__html:content.slice(0,250)}}/>
-                </div>
-                <div className="text-slate-400 m-5">
-                    {`${Math.ceil(content.length / 100)} minute(s) read`}
-                </div>
-                <div className="m-5">
-                    {Math.ceil(Math.random()*100)} Likes 
-                </div>
+    return (
+        <>
+        
+        <div className="flex flox-col">
+            <Link to={`/blog/${id}`} className="block">
+                <div className="w-full max-w-3xl bg-inherit border border-[#2a2a2a] hover:border-[#444] rounded-2xl p-5 mb-6 transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    {/* Left: Blog Content */}
+                    <div className="flex-1">
+                        <div className="flex items-center text-sm text-gray-400 space-x-2 mb-2">
+                            <Avatar name={authorName} />
+                            {console.log(content)}
+                            <span className="font-medium text-white ">{authorName}</span>
+                            <Circle />
+                            <span>{publishedDate}</span>
+                        </div>
 
-            </div>
-            <img src={url} className="w-[400px] h-[200px] object-cover" alt="" />
+                        <h3 className=" mt-6 text-md sm:text-xl  text-white leading-snug mb-1">
+                            {title}
+                        </h3>
+
+                        <div
+                            className="text-sm text-gray-400 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: content.slice(0, 200) }}
+                        />
+
+                        <div className="flex items-center text-xs text-gray-500 mt-3 space-x-4">
+                            <span>{`${Math.ceil(content.length / 100)} min read`}</span>
+                            <span>•</span>
+                            <span>{Math.ceil(Math.random() * 100)} likes</span>
+                        </div>
+                    </div>
+
+                    {/* Right: Image */}
+                    <div className="w-[160px] h-[90px] flex-shrink-0 rounded-md overflow-hidden">
+                        <img
+                            src={url}
+                            alt={title}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                </div>
+            </Link>
         </div>
-    </Link>
-}
+           
+        
+        </>
+    );
+};
 
 export function Circle() {
-    return <div className=" mr-3  ml-3 h-1 w-1 rounded-full bg-slate-500">
-
-    </div>
+    return <div className="h-1 w-1 rounded-full bg-gray-500"></div>;
 }
 
-export function Avatar({ name, size = "small" }: { name: string, size?: "small" | "big" }) {
-    return <div className={`relative inline-flex items-center justify-center overflow-hidden bg-gray-600 rounded-full mr-3 ${size === "small" ? "w-6 h-6" : "w-10 h-10"}`}>
-    <span className={`${size === "small" ? "text-xs" : "text-md"} font-extralight text-gray-600 dark:text-gray-300`}>
-        {name[0].toUpperCase()}
-    </span>
-</div>
+export function Avatar({
+    name,
+    size = "small"
+}: {
+    name: string;
+    size?: "small" | "big";
+}) {
+    return (
+        <div
+            className={`inline-flex items-center justify-center bg-gray-700 rounded-full text-white ${
+                size === "small" ? "w-6 h-6 text-xs" : "w-10 h-10 text-lg"
+            }`}
+        >
+            {name[0].toUpperCase()}
+        </div>
+    );
 }

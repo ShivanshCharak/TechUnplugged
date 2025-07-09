@@ -1,11 +1,14 @@
 import { ChangeEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { json, Link, useNavigate } from "react-router-dom";
 import { SignupInput } from "@100xdevs/medium-common";
+import {jwtDecode, JwtPayload} from 'jwt-decode'
+
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 
 export const Auth = ({ type }: { type: "signup" | "signin" }) => {
     const navigate = useNavigate();
+
     const [postInputs, setPostInputs] = useState<SignupInput>({
         name: "",
         email: "",
@@ -17,6 +20,9 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
             const response = await axios.post(`${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`, postInputs);
             const jwt = response.data;
             localStorage.setItem("token", jwt);
+            let decoded = jwtDecode<JwtPayload>(jwt)
+            console.log(decoded)
+            localStorage.setItem("jwt",JSON.stringify(decoded))
             navigate("/blogs");
         } catch(e) {
             alert("Error while signing up")

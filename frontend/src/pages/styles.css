@@ -181,3 +181,10 @@ hr {
 .floating-menu button.is-active:hover {
   color: #5A43E0; /* Darker purple */
 }
+.ProseMirror p.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #a0a0a0;
+  pointer-events: none;
+  height: 0;
+}
