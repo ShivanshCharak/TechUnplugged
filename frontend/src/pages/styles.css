@@ -188,3 +188,12 @@ hr {
   pointer-events: none;
   height: 0;
 }
+.AuthBg{
+  background-image: url("https://cloudmate-test.s3.us-east-1.amazonaws.com/res/hashnode/image/upload/v1695109216925/GH1o67-ZP.png");
+  background-position: center center;
+  background-size: cover;
+
+  width: 100%;
+  height: 100%;
+  
+}

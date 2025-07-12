@@ -14,3 +14,41 @@ body {
     font-family: "Inter";
 }
 
+/* HTML: <div class="loader"></div> */
+/* Loading animation */
+.DotsBars {
+  position: relative;
+  color: transparent !important;
+}
+
+.DotsBars::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 16px;
+  background: 
+    radial-gradient(circle closest-side, white 90%, transparent) 0% 50%,
+    radial-gradient(circle closest-side, white 90%, transparent) 50% 50%,
+    radial-gradient(circle closest-side, white 90%, transparent) 100% 50%;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  animation: dotsBars 1s infinite linear;
+}
+
+@keyframes dotsBars {
+  0% {
+    background-size: 12px 12px, 12px 12px, 12px 12px;
+  }
+  33% {
+    background-size: 12px 24px, 12px 12px, 12px 12px;
+  }
+  66% {
+    background-size: 12px 12px, 12px 24px, 12px 12px;
+  }
+  100% {
+    background-size: 12px 12px, 12px 12px, 12px 24px;
+  }
+}

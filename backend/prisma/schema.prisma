@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,19 +8,99 @@ datasource db {
 }
 
 model User {
-  id  Int    @id @default(autoincrement())
-  name    String?
-  username String @unique
+  id          String     @id @default(uuid())
+  firstname   String?
+  lastname    String?
+  email       String     @unique
   password String
-  blogs    Blog[]
+  createdAt   DateTime   @default(now())
+  isPremium  Boolean    @default(false)
+  isDeleted   Boolean @default(false)
+  userInfo    UserInfo?
+  bookmarks   Bookmarks[]
+  blogMeta    BlogMeta[]
+  Drafts        Draft?   @relation("DraftsRelation")
+  followers   Engagement[] @relation("FollowersRelation")
+  following   Engagement[] @relation("FollowingRelation")
+
+
+  @@index([email])
 }
 
-model Blog {
-  id  Int    @id @default(autoincrement())
-  authorId   Int
-  content    String
-  title       String
-  published Boolean  @default(false)
-  url         String 
-  author    User @relation(fields: [authorId], references: [id])
+model UserInfo {
+  id        String @id @default(uuid())
+  avatar    String?
+  intro     String?
+  tech      String?
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model BlogMeta{
+  id   String @id @default(uuid())
+  title   String
+  info    String
+  createdAt DateTime @default(now())
+  image   String
+  userId String
+  isDeleted Boolean
+  user    User  @relation(fields: [userId], references: [id])
+   
+}
+model Bookmarks {
+  id       String    @id @default(uuid())
+  userId   String    @unique
+  user     User      @relation(fields: [userId], references: [id])
+  blogsId   String[]
+}
+
+model Engagement {
+  id           String @id @default(uuid())
+  followerId   String
+  followingId  String
+
+  follower     User   @relation("FollowersRelation", fields: [followerId], references: [id])
+  following    User   @relation("FollowingRelation", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Draft {
+  id       String   @id @default(uuid())
+  userId   String @unique
+  blogId   String
+
+  user     User     @relation("DraftsRelation",fields: [userId], references: [id])
+
+  @@unique([userId, blogId])
+}
+model UserMaterializedView {
+  username     String
+  email        String
+  isPremium    Boolean
+  createdAt    DateTime
+  blogId       String
+  bookmarksId  String
+  draftsId     String
+
+  @@map("user_materialized_view")
+  @@ignore
+}
+model FeedMaterializedView {
+  username     String
+  email        String
+  isPremium    Boolean
+  createdAt    DateTime
+  blogId       String
+  bookmarksId  String
+  draftsId     String
+  views         Int
+  userId      String
+
+  @@map("feed_materialized_view")
+  @@ignore
 }

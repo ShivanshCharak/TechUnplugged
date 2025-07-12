@@ -10,7 +10,7 @@ export const Appbar = () => {
   return (
     <nav className="flex items-center justify-between relative z-10 w-full">
       {/* Logo */}
-      <img className="w-[6%] ml-10" src={logo} alt="Logo" />
+      <img className="w-[6%] ml-10 " src={logo} alt="Logo" />
 
       {/* Navigation Links */}
       <ul className="flex justify-between w-[30%] bg-[#0a0a0a] rounded-lg p-5 px-10">
@@ -57,13 +57,13 @@ export const Appbar = () => {
                 ">
                   <img src={pen} className="rounded-full" alt="Write post" />
                 </div>
-                <div className='w-[50px] bg-gray-700 h-[50px] rounded-full'></div>
+                <div className='w-[50px] bg-gray-700 h-[50px] rounded-full cursor-pointer'></div>
               </div>
             </Link>
           </div>
         ) : (
           <Link to="/signup">
-            <div className="border-white border-[1px] rounded-md px-10 py-3 bg-white text-black font-semibold cursor-pointer duration-300 hover:text-white hover:bg-[#0a0a0a]">
+            <div className=" mr-10 border-white border-[1px] rounded-full px-10 py-3 bg-white text-black font-semibold cursor-pointer duration-300 hover:text-white hover:bg-[#0a0a0a]">
               Signup
             </div>
           </Link>
