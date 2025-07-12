@@ -3,6 +3,7 @@ import Blog from "../models/blogs.model";
 import { TBlogSchema } from "../types";
 import Reaction from "../models/reaction.model";
 import Comment from "../models/comments.model";
+import Reply from '../models/replies.model'
 import mongoose from "mongoose";
 export async function createBlogs(req:Request,res:Response){
     const {title,body,userId,images}:TBlogSchema =req.body
@@ -82,45 +83,38 @@ export async function Comments(req:Request, res:Response){
 
 export async function Replies(req: Request, res: Response) {
     try {
-        const { commentId, userId, replies } = req.body;
+        const { commentId, userId, text } = req.body; // Changed from 'replies' to 'text'
 
-    
-        if (!commentId || !userId || !replies) {
+        if (!commentId || !userId || !text) {
             return res.status(400).json({ message: "All fields required" });
         }
+
         if (!mongoose.Types.ObjectId.isValid(commentId) || 
             !mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ message: "Invalid ID format" });
         }
 
-        let updatedReplies ={
-            $push:{
-                replies:{
-                    $each: Array.isArray(replies)?replies:[replies],
-                    userId: new mongoose.Types.ObjectId(userId),
+        const newReply = {
+            text: text, // Required by your schema
+            userId: new mongoose.Types.ObjectId(userId),
+            createdAt: new Date()
+        };
+
+        const result = await Reply.findOneAndUpdate(
+            { commentId: new mongoose.Types.ObjectId(commentId) },
+            {
+                $push: { replies: newReply },
+                $setOnInsert: {
+                    commentId: new mongoose.Types.ObjectId(commentId),
                     createdAt: new Date()
                 }
             },
-            $setOnInsert:{
-                commentId: new mongoose.Types.ObjectId(commentId),
-                createdAt: new Date()
-            }
-            
-        }
-
-        const result = await Comment.findOneAndUpdate(
-            { commentId: new mongoose.Types.ObjectId(commentId) },
-            updatedReplies,
-            { new: true,upsert:true ,runValidators: true }
+            { new: true, upsert: true, runValidators: true }
         );
 
-        if (!result) {
-            return res.status(404).json({ message: "Blog comment thread not found" });
-        }
-
         return res.status(201).json({
-            message: "Replies added successfully",
-            addedCount: replies.length,
+            message: "Reply added successfully",
+            reply: result?.replies?.slice(-1)[0] // Return the last added reply
         });
 
     } catch (error) {

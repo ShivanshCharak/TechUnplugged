@@ -22,4 +22,5 @@ const ReplySchema = new Schema({
 }, { timestamps: true });
 
 ReplySchema.index({ commentId: 1, createdAt: 1 }); 
-const Reply = model("Comment", ReplySchema);
+const Reply = model("Reply", ReplySchema);
+export default Reply
