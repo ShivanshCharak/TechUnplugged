@@ -16,3 +16,12 @@ JWT_SECRET = ""
 # binding = "DB"
 # database_name = "my-database"
 # database_id = ""
+compatibility_flags = ["nodejs_compat"] 
+
+[[queues.producers]]
+queue ="user_events"
+binding="USER_EVENTS_QUEUE"
+
+[[queues.consumers]]
+queue="users_events"
+binding="USER_EVENTS_QUEUE"
