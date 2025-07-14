@@ -57,7 +57,7 @@ userRouter.post('/signup', async (c) => {
       }
     });
 
-    // Generate tokens with proper expiration times
+
     const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60); // 15 minutes
     const refreshTokenExpiry = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)); // 7 days
 
@@ -137,12 +137,12 @@ userRouter.post('/refresh', async (c) => {
   const refreshToken = getCookie(c, 'refreshToken');
   
   if (!refreshToken) {
-    throw new HTTPException(401, { message: "Refresh token not found" });
+    return c.json({message:"Refresh token not found"},401)
   }
 
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
+  // const prisma = new PrismaClient({
+  //   datasourceUrl: c.env.DATABASE_URL,
+  // }).$extends(withAccelerate());
 
   try {
     // Verify the refresh token
@@ -155,7 +155,7 @@ userRouter.post('/refresh', async (c) => {
     });
 
     if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
-      throw new HTTPException(401, { message: "Invalid refresh token" });
+       return c.json({message:"Invalid refresh token"},401)
     }
 
     // Generate new access token
@@ -226,7 +226,7 @@ userRouter.post('/logout', async (c) => {
     path: '/auth/refresh'
   });
 
-  return c.json({ message: "Logged out successfully" });
+  return c.json({ message: "Logged out successfully" },200);
 });
 /**
  * USER LOGIN
@@ -238,9 +238,9 @@ userRouter.post('/login', async (c) => {
     throw new HTTPException(400, { message: "Email and password are required" });
   }
 
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
+  // const prisma = new PrismaClient({
+  //   datasourceUrl: c.env.DATABASE_URL,
+  // }).$extends(withAccelerate());
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
@@ -288,7 +288,7 @@ userRouter.post('/login', async (c) => {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 10, // 7 days
       path: '/auth/refresh'
     });
 
