@@ -114,18 +114,14 @@ export const Publish = () => {
                                     const url = await uploadToCloudinary(preview);
                                     if (url) {
                                         const response = await axios.post(
+                                        
                                             `${BACKEND_URL}/api/v1/blog`,
                                             {
-                                                id:id.id,
+                                                id:,
                                                 title,
                                                 content: description,
                                                 url, 
                                             },
-                                            {
-                                                headers: {
-                                                    Authorization: localStorage.getItem("token"),
-                                                },
-                                            }
                                         );
                                         navigate(`/blog/${response.data.id}`);
                                     } else {

@@ -1,30 +1,51 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // This is overridden in code
 }
 
 model User {
-  id          String     @id @default(uuid())
+  id          String       @id @default(uuid())
   firstname   String?
   lastname    String?
-  email       String     @unique
-  password String
-  createdAt   DateTime   @default(now())
-  isPremium  Boolean    @default(false)
-  isDeleted   Boolean @default(false)
+  email       String       @unique
+  password    String
+  createdAt   DateTime     @default(now())
+  isPremium   Boolean      @default(false)
+  isDeleted   Boolean      @default(false)
+
+
   userInfo    UserInfo?
-  bookmarks   Bookmarks[]
-  blogMeta    BlogMeta[]
-  Drafts        Draft?   @relation("DraftsRelation")
+  bookmarks   Bookmark[]
+  drafts      Draft[]
   followers   Engagement[] @relation("FollowersRelation")
   following   Engagement[] @relation("FollowingRelation")
-
+  comments    Comment[]
+  blogs       Blog[]
+  refreshToken RefreshToken[]
 
   @@index([email])
+}
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isRevoked Boolean  @default(false)
+  
+  // Optional: Store device/session info
+  deviceInfo String?
+  ipAddress  String?
+  userAgent  String?
+  
+  @@map("refresh_tokens")
 }
 
 model UserInfo {
@@ -38,22 +59,77 @@ model UserInfo {
   @@index([userId])
 }
 
-model BlogMeta{
-  id   String @id @default(uuid())
-  title   String
-  info    String
-  createdAt DateTime @default(now())
-  image   String
-  userId String
-  isDeleted Boolean
-  user    User  @relation(fields: [userId], references: [id])
-   
+model Blog {
+  id           String     @id @default(uuid())
+  title        String
+  slug         String     @unique
+  excerpt      String?
+  images       String
+  body         Json        // Stored as JSONB in PostgreSQL
+  createdAt    DateTime   @default(now())
+  isDeleted    Boolean    @default(false)
+  isPublished  Boolean    @default(false)
+  wordCount    Int
+  views        Int        @default(0)
+  userId       String
+
+  user         User       @relation(fields: [userId], references: [id])
+  comments     Comment[]
+  reactions    Reaction?
+  tags         BlogTag[]
+  bookmarks    Bookmark[]
+  drafts       Draft[]
 }
-model Bookmarks {
-  id       String    @id @default(uuid())
-  userId   String    @unique
-  user     User      @relation(fields: [userId], references: [id])
-  blogsId   String[]
+
+model Comment {
+  id        String     @id @default(uuid())
+  blogId    String
+  userId    String
+  content   String
+  createdAt DateTime   @default(now())
+  replyToId String?
+
+  blog      Blog       @relation(fields: [blogId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+  replyTo   Comment?   @relation("CommentReply", fields: [replyToId], references: [id])
+  replies   Comment[]  @relation("CommentReply")
+  @@index([blogId])
+  @@index([replyToId])
+
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  blogId    String   @unique
+  likes     Int      @default(0)
+  applause  Int      @default(0)
+  laugh     Int      @default(0)
+  blog      Blog     @relation(fields: [blogId], references: [id])
+  @@index([blogId])
+}
+
+model Bookmark {
+  id      String   @id @default(uuid())
+  userId  String
+  blogId  String
+
+  user    User     @relation(fields: [userId], references: [id])
+  blog    Blog     @relation(fields: [blogId], references: [id])
+
+  @@unique([userId, blogId])
+  @@index([userId])
+  @@index([blogId])
+}
+
+model Draft {
+  id      String   @id @default(uuid())
+  userId  String
+  blogId  String
+
+  user    User     @relation(fields: [userId], references: [id])
+  blog    Blog     @relation(fields: [blogId], references: [id])
+
+  @@unique([userId, blogId])
 }
 
 model Engagement {
@@ -69,15 +145,23 @@ model Engagement {
   @@index([followingId])
 }
 
-model Draft {
-  id       String   @id @default(uuid())
-  userId   String @unique
-  blogId   String
+model Tag {
+  id     String    @id @default(uuid())
+  name   String    @unique
 
-  user     User     @relation("DraftsRelation",fields: [userId], references: [id])
-
-  @@unique([userId, blogId])
+  blogs  BlogTag[]
 }
+
+model BlogTag {
+  blogId String
+  tagId  String
+
+  blog   Blog @relation(fields: [blogId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([blogId, tagId])
+}
+
 model UserMaterializedView {
   username     String
   email        String
@@ -90,6 +174,7 @@ model UserMaterializedView {
   @@map("user_materialized_view")
   @@ignore
 }
+
 model FeedMaterializedView {
   username     String
   email        String
@@ -98,8 +183,8 @@ model FeedMaterializedView {
   blogId       String
   bookmarksId  String
   draftsId     String
-  views         Int
-  userId      String
+  views        Int
+  userId       String
 
   @@map("feed_materialized_view")
   @@ignore

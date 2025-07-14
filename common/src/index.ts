@@ -17,8 +17,19 @@ export const signinInput = z.object({
 export type SigninInput = z.infer<typeof signinInput>
 
 export const createBlogInput = z.object({
-    title: z.string(),
-    content: z.string(),
+    id: z.string().uuid(),
+  title: z.string(),
+  slug: z.string(),
+  excerpt: z.string().optional().nullable(),
+  images: z.string(),
+  body: z.record(z.any()), 
+  createdAt: z.date(),
+  isDeleted: z.boolean(),
+  isPublished: z.boolean(),
+  wordCount: z.number(),
+  views: z.number().default(0),
+  userId: z.string(),
+    
 })
 export type CreateBlogInput = z.infer<typeof createBlogInput>
 

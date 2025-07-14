@@ -2,8 +2,10 @@ name = "week-13-offline"
 compatibility_date = "2023-12-01"
 
 [vars]
-DATABASE_URL = ""
-JWT_SECRET = ""
+DATABASE_URL="prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza19SVS00RnRWWTFQUjgtRlg3U1FGOEQiLCJhcGlfa2V5IjoiMDFLMDNEOUJHWFE5N1JaQTlKVzQxREVIUTMiLCJ0ZW5hbnRfaWQiOiI2M2EzZjUxMjYwZTQ5MWVkMzU5N2MyMDEzOGY5MWI4NGE2M2MxNWU5ZjdmYzFhNDg0ZWZmNTNiODA4ZWVjMzRhIiwiaW50ZXJuYWxfc2VjcmV0IjoiMGRlNTg5N2QtYzhlNi00ZDNlLTlmMzEtNTdmN2U0YmMyNjg1In0.YxcuLGEb6ULYXwIluq2K8svki68VThqptO20xKHbT_4"
+GROQ_API_KEY="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"
+ACCESS_TOKEN_SECRET = "NKJNEKJFNEFJ"
+REFRESH_TOKEN_SECRET="FNEKJNEhjeFE"
 # [[kv_namespaces]]
 # binding = "MY_KV_NAMESPACE"
 # id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -16,12 +18,4 @@ JWT_SECRET = ""
 # binding = "DB"
 # database_name = "my-database"
 # database_id = ""
-compatibility_flags = ["nodejs_compat"] 
-
-[[queues.producers]]
-queue ="user_events"
-binding="USER_EVENTS_QUEUE"
-
-[[queues.consumers]]
-queue="users_events"
-binding="USER_EVENTS_QUEUE"
+compatibility_flags = ["nodejs_compat"]

@@ -1,6 +1,6 @@
 import { ChangeEvent, useState } from "react";
 import { json, Link, useNavigate } from "react-router-dom";
-import SignupInput from '@medium-common'
+// import SignupInput from '100'
 import {jwtDecode, JwtPayload} from 'jwt-decode'
 import arrowLeft from '../../public/svg/arrow-left.svg'
 import axios from "axios";
@@ -10,7 +10,7 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
     const navigate = useNavigate();
     const [showLoading ,setShowLoading] = useState<boolean>(false)
 
-    const [postInputs, setPostInputs] = useState<SignupInput>({
+    const [postInputs, setPostInputs] = useState({
         firstname: "",
         lastname:"",
         email:"",
@@ -21,9 +21,6 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
     async function sendRequest() {
         try {
           setShowLoading(true);
-          
-          localStorage.removeItem("token");
-          localStorage.removeItem("jwt");
       
           const response = await axios.post(
             `${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`,
@@ -41,15 +38,10 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
             throw new Error(response.data?.message || 'Authentication failed');
           }
       
-          const { jwt } = response.data;
+          const data = response.data;
           
     
-          if (!jwt) throw new Error('No token received');
-      
-          localStorage.setItem("token", jwt);
-          
-          const decoded = jwtDecode<JwtPayload>(jwt);
-          localStorage.setItem("user", JSON.stringify(decoded));
+          if (!data.accessToken) throw new Error('No token received');
           
           navigate("/blogs");
         } catch (e) {
