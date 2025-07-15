@@ -1,15 +1,15 @@
 export function BlogAside() {
     return (<>
         <aside className="-mt-10 flex flex-col justify-between h-[2000px] ml-10">
-            <div className=" mb-10 w-[340px] h-[450px] p-5 border rounded-2xl flex flex-col justify-between border-zinc-800">
+            <div className=" mb-10 w-[340px] h-[450px] p-5 border rounded-2xl flex flex-col justify-between border-zinc-800 mt-10">
                 <h3 className="mb-4 text-lg text-left">ChangeLog</h3>
                 <img className="rounded-lg border w-[250px] mb-6 border-zinc-800" src="https://cdn.hashnode.com/res/hashnode/image/upload/v1730716571037/17be78a3-fe44-4769-83bf-e4df94349758.png" alt="" />
                 <p className="text-left font-semibold mb-3 text-md">New Steps and components and improved accessibility on Tech unpluggeg's blog</p>
                 <span className="flex items-center gap-2">
-  <span className="text-gray-400">June 10, 2025</span>
-  <span>•</span>
-  <span className="bg-green-950 text-green-300 text-[14px] px-2 py-1 rounded-2xl">New</span>
-</span>
+                    <span className="text-gray-400">June 10, 2025</span>
+                    <span>•</span>
+                    <span className="bg-green-950 text-green-300 text-[14px] px-2 py-1 rounded-2xl">New</span>
+                </span>
                 <button className="border border-zinc-800 px-7 py-3 rounded-full mt-10">View Prevoious Change Logs</button>
 
             </div>
@@ -76,10 +76,10 @@ export function BlogAside() {
                 <h3 className="mb-4 text-lg text-left mt-4">Personalize your feed</h3>
                 <p className="text-left font-semibold mb-3 text-md">New Steps and components and improved accessibility on Tech unpluggeg's blog</p>
                 <span className="flex items-center gap-2">
-  <span className="text-gray-400">June 10, 2025</span>
-  <span>•</span>
-  <span className="bg-green-950 text-green-300 text-[14px] px-2 py-1 rounded-2xl">New</span>
-</span>
+                    <span className="text-gray-400">June 10, 2025</span>
+                    <span>•</span>
+                    <span className="bg-green-950 text-green-300 text-[14px] px-2 py-1 rounded-2xl">New</span>
+                </span>
                 <button className="border border-blue-800 px-7 hover:bg-blue-900/50 duration-600 transition-all py-3 text-blue-400  rounded-full srounded-full mt-10">Personalize your feed</button>
 
             </div>

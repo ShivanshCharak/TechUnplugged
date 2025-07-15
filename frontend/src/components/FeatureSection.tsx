@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from 'react';
 import asset from '../assets/assets.jpeg';
 import asset2 from '../assets/asset2.jpeg';
 import asset3 from '../assets/asset3.jpeg';

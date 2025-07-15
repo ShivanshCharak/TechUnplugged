@@ -27,7 +27,6 @@ export const BlogCard = ({
                     <div className="flex-1">
                         <div className="flex items-center text-sm text-gray-400 space-x-2 mb-2">
                             <Avatar name={authorName} />
-                            {console.log(content)}
                             <span className="font-medium text-white ">{authorName}</span>
                             <Circle />
                             <span>{publishedDate}</span>

@@ -1,5 +1,5 @@
 // components/Pricing.jsx
-import React from 'react';
+
 import circle from '../assets/check.svg';
 
 const Pricing = () => {

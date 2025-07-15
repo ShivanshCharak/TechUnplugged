@@ -1,8 +1,8 @@
 import logo from '../assets/logo.svg';
 import { Link, useLocation } from "react-router-dom";
-import notification from "../../public/svg/notification.svg";
+
 import pen from '../../public/svg/pen.svg';
-import search from '../../public/svg/search.svg';
+
 
 export const Appbar = () => {
   const { pathname } = useLocation(); // Better than window.location
@@ -35,7 +35,7 @@ export const Appbar = () => {
 
       {/* Auth Buttons */}
       <div className='flex items-center justify-between'>
-        {localStorage.getItem('token') ? (
+        {localStorage.getItem('accessToken') ? (
           <div className="flex items-center gap-4">
             {/* Search (commented out) */}
             {/* <span className='flex items-center border border-gray-700 rounded-full'>

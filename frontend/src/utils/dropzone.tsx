@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import axios from "axios";
+
 import CloudUpload from '../assets/cloud-upload.svg'
 
 
@@ -8,12 +8,12 @@ interface FileUploadProps{
   preview:string|null,
   setPreview:React.Dispatch<React.SetStateAction<string|null>>
 }
-export default function FileUpload({preview,setPreview}:FileUploadProps){
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
+export default function FileUpload({setPreview}:FileUploadProps){
+  // const [files, setFiles] = useState<File[]>([]);
+  // const [uploading, setUploading] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles(acceptedFiles);
+    // setFiles(acceptedFiles);
     
     // Create image preview
     const file = acceptedFiles[0];
@@ -26,25 +26,25 @@ export default function FileUpload({preview,setPreview}:FileUploadProps){
 
 
 
-  const uploadFile = async () => {
-    if (files.length === 0) return alert("No file selected!");
+  // const uploadFile = async () => {
+  //   if (files.length === 0) return alert("No file selected!");
 
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", files[0]);
+  //   setUploading(true);
+  //   const formData = new FormData();
+  //   formData.append("file", files[0]);
 
-    try {
-      const response = await axios.post("/api/upload", formData);
-      console.log("Uploaded File URL:", response.data.url);
+  //   try {
+  //     const response = await axios.post("/api/upload", formData);
+  //     console.log("Uploaded File URL:", response.data.url);
     
-      alert("Upload successful!");
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Upload failed!");
-    }
+  //     alert("Upload successful!");
+  //   } catch (error) {
+  //     console.error("Upload error:", error);
+  //     alert("Upload failed!");
+  //   }
 
-    setUploading(false);
-  };
+  //   setUploading(false);
+  // };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
