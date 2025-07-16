@@ -5,14 +5,9 @@
 ![alt text](image.png)
 
 
-
-Okay, I understand. You want a README-style explanation for this system design diagram, as if it were the top-level README for a project.
-
-Here's a README.md content based on the provided image:
-
 -----
 
-# Real-Time Interactive Platform - System Design
+# Tech unplugged - System Design
 
 This repository contains the high-level system design for a real-time interactive platform, capable of handling high volumes of user engagement such as views, comments, likes, and applause. The design focuses on scalability, responsiveness, and data durability.
 
