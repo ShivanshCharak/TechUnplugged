@@ -15,14 +15,12 @@ export const useBlogData = (blog: Blog) => {
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const [blogDB, setBlogDB] = useState<Record<string, IBlogReactions>>({});
 
-
   useEffect(() => {
     const data = AuthService.getJsonAccessData();
     if (data) {
       setAuthData(data);
     }
   }, [setAuthData]);
-
 
   useEffect(() => {
     if (blog.id) {
@@ -46,7 +44,6 @@ export const useBlogData = (blog: Blog) => {
       }));
     }
   }, [blog.id, blog.reactions, setReactions]);
-
 
   useEffect(() => {
     get('PostReactions').then((savedData) => {
@@ -91,13 +88,15 @@ export const useBlogData = (blog: Blog) => {
         };
       }
       
-      newDB[blog.id].reactions[type] += 1;
+      // Fix: Ensure we're incrementing a number, not a string
+      const currentValue = newDB[blog.id].reactions[type];
+      newDB[blog.id].reactions[type] = (typeof currentValue === 'number' ? currentValue : 0) + 1;
       return newDB;
     });
     
     setReactions(prev => ({
       ...prev,
-      [type]: prev[type] + 1
+      [type]: (typeof prev[type] === 'number' ? prev[type] : 0) + 1
     }));
   };
 
@@ -180,12 +179,13 @@ export const useBlogData = (blog: Blog) => {
       const comment: comment = {
         id: Date.now().toString(),
         content: newComment,
-        author: {
-          name: authData.name,
-          id: authData.id || ''
+        // Fix: Use 'user' instead of 'author' based on your comment type
+        user: {
+          firstname: authData.name.split(' ')[0] || authData.name,
+          lastname: authData.name.split(' ')[1] || ''
         },
         createdAt: new Date().toISOString(),
-        userId: authData.id,
+        userId: authData.id || '',
         blogId: blog.id,
         replyToId: null
       };
@@ -200,12 +200,13 @@ export const useBlogData = (blog: Blog) => {
       const reply: comment = {
         id: Date.now().toString(),
         content: replyText,
-        author: {
-          name: authData.name,
-          id: authData.id || ''
+        // Fix: Use 'user' instead of 'author' based on your comment type
+        user: {
+          firstname: authData.name.split(' ')[0] || authData.name,
+          lastname: authData.name.split(' ')[1] || ''
         },
         createdAt: new Date().toISOString(),
-        userId: authData.id,
+        userId: authData.id || '',
         blogId: blog.id,
         replyToId: parentCommentId
       };
