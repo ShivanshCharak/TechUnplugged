@@ -2,10 +2,8 @@
 import { Groq } from "groq-sdk/index.mjs";
 import { Hono } from "hono";
 import { createBlogInput, updateBlogInput } from "@100xdevs/medium-common";
-import { cors } from "hono/cors";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { verify } from "hono/jwt";
 
 export const blogRouter = new Hono<{
   Bindings: {
@@ -19,17 +17,41 @@ export const blogRouter = new Hono<{
   };
 }>();
 
-
 function getPrismaClient(c: any, useReplica: boolean = false) {
   return new PrismaClient({
-    datasourceUrl: useReplica ? c.env.DATABASE_URL_REPLICA_1 : c.env.DATABASE_URL,
+    datasourceUrl: c.env.DATABASE_URL,
+    // useReplica ? c.env.DATABASE_URL_REPLICA_1 : 
   }).$extends(withAccelerate());
+}
+
+// Helper function to generate slug from title
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/--+/g, '-') // Replace multiple hyphens with single hyphen
+    .trim();
+}
+
+// Helper function to count words in content
+function countWords(content: any): number {
+  if (typeof content === 'string') {
+    return content.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }
+  if (typeof content === 'object') {
+    // If content is JSON, convert to string and count words
+    const textContent = JSON.stringify(content).replace(/[{}[\]",:]/g, ' ');
+    return textContent.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }
+  return 0;
 }
 
 // -------------------- CHATBOT --------------------
 blogRouter.post("/chatbot", async (c) => {
   const body = await c.req.json();
   const userMessage = body.message;
+  
   if (!userMessage) return c.json({ error: "Message is required" }, 400);
 
   try {
@@ -49,104 +71,389 @@ blogRouter.post("/chatbot", async (c) => {
 });
 
 // -------------------- CREATE BLOG --------------------
-blogRouter.post("/", async (c) => {
-    console.log("hitting")
+blogRouter.post("/create", async (c) => {
+  console.log("Creating blog");
   const body = await c.req.json();
-  const { success } = createBlogInput.safeParse(body);
-  if (!success) return c.json({ message: "Inputs not correct" }, 411);
- 
-
+  console.log(body)
+  // const { success } = createBlogInput.safeParse(body);
+  
+  // if (!success) return c.json({ message: "Inputs not correct" }, 411);
 
   const prisma = getPrismaClient(c);
-  const blog = await prisma.blog.create({
-    data: {
-      title: body.title,
-      body:body.content,
-      images: body.url,
-      userId: Number(body.id),
-    },
-  });
-  return c.json({ id: blog.id });
+  
+  try {
+    const slug = generateSlug(body.title);
+    const wordCount = countWords(body.content);
+    
+    const blog = await prisma.blog.create({
+      data: {
+        title: body.title,
+        slug: slug,
+        excerpt: body.excerpt || null,
+        body: body.description, // This will be stored as JSON
+        images: body.url || "",
+        userId: body.id, // Assuming body.id is already a string
+        wordCount: wordCount,
+        isPublished: body.isPublished || false,
+      },
+    });
+
+    return c.json({ id: blog.id, slug: blog.slug });
+  } catch (error) {
+    console.error("Error creating blog:", error);
+    return c.json({ message: "Error creating blog" }, 500);
+  }
 });
 
 // -------------------- UPDATE BLOG --------------------
 blogRouter.put("/", async (c) => {
   const body = await c.req.json();
   const { success } = updateBlogInput.safeParse(body);
+  
   if (!success) return c.json({ message: "Inputs not correct" }, 411);
 
   const prisma = getPrismaClient(c);
-  const blog = await prisma.blog.update({
-    where: { id: body.id },
-    data: {
+  
+  try {
+    const updateData: any = {
       title: body.title,
-      content: body.content,
-    },
-  });
-  return c.json({ id: blog.id });
+      body: body.content,
+    };
+
+    // Update slug if title changed
+    if (body.title) {
+      updateData.slug = generateSlug(body.title);
+    }
+
+    // Update word count if content changed
+    if (body.content) {
+      updateData.wordCount = countWords(body.content);
+    }
+
+    // Update excerpt if provided
+    if (body.excerpt) {
+      updateData.excerpt = body.excerpt;
+    }
+
+    // Update published status if provided
+    if (typeof body.isPublished === 'boolean') {
+      updateData.isPublished = body.isPublished;
+    }
+
+    const blog = await prisma.blog.update({
+      where: { id: body.id },
+      data: updateData,
+    });
+
+    return c.json({ id: blog.id, slug: blog.slug });
+  } catch (error) {
+    console.error("Error updating blog:", error);
+    return c.json({ message: "Error updating blog" }, 500);
+  }
 });
 
 // -------------------- GET BLOGS --------------------
 blogRouter.get("/bulk", async (c) => {
   const prisma = getPrismaClient(c, true);
-  const blogs = await prisma.blogs.findMany({
-    select: {
-      title: true,
-      body: true,
-      id: true,
-      author_id: true,
-      slug: true,
-      excerpt: true,
-      images: true,
-    },
-    include: {
-      user: {
-        select: {
-          firstname: true,
-          lastname: true,
-          createdAt: true,
-          email: true,
-        },
+  
+  try {
+    const blogs = await prisma.blog.findMany({
+      where: {
+        isDeleted: false,
+        isPublished: true,
       },
-      blog_tags: {
-        include: {
-          tag: {
-            select: { name: true },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            email: true,
+            createdAt: true,
+          },
+        },
+        tags: {
+          include: {
+            tag: {
+              select: { 
+                id: true,
+                name: true 
+              },
+            },
+          },
+        },
+        comments: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            userId: true,
+            user: {
+              select: {
+                firstname: true,
+                lastname: true,
+              },
+            },
+          },
+          where: {
+            replyToId: null, // Only get top-level comments
+          },
+          take: 5, // Limit to 5 comments for performance
+        },
+        reactions: {
+          select: {
+            likes: true,
+            applause: true,
+            laugh: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            bookmarks: true,
           },
         },
       },
-      comments: {
-        select: {
-          comment: true,
-          createdAt: true,
-          user_id: true,
-        },
+      orderBy: {
+        createdAt: 'desc',
       },
-      reactions: true,
-    },
-  });
-  return c.json({ message: "Fetched successfully", blogs });
+    });
+
+    return c.json({ 
+      message: "Fetched successfully", 
+      blogs: blogs.map(blog => ({
+        ...blog,
+        author: {
+          id: blog.user.id,
+          name: `${blog.user.firstname} ${blog.user.lastname}`.trim(),
+          email: blog.user.email,
+          createdAt: blog.user.createdAt,
+        },
+        user: undefined, // Remove the user object since we're using author
+      }))
+    });
+  } catch (error) {
+    console.error("Error fetching blogs:", error);
+    return c.json({ message: "Error fetching blogs" }, 500);
+  }
 });
 
 // -------------------- GET SINGLE BLOG --------------------
 blogRouter.get("/:id", async (c) => {
   const id = c.req.param("id");
   const prisma = getPrismaClient(c, true);
+
   try {
-    const blog = await prisma.blogs.findFirst({
-      where: { id: Number(id) },
-      select: {
-        id: true,
-        title: true,
-        body: true,
-        images: true,
-        author: {
-          select: { name: true },
+    // First, increment the view count
+    await prisma.blog.update({
+      where: { id: id },
+      data: {
+        views: {
+          increment: 1,
         },
       },
     });
-    return c.json({ blog });
-  } catch (e) {
-    return c.json({ message: "Error while fetching blog post" }, 411);
+
+    const blog = await prisma.blog.findUnique({
+      where: { 
+        id: id,
+        isDeleted: false,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            email: true,
+            userInfo: {
+              select: {
+                avatar: true,
+                intro: true,
+                tech: true,
+              },
+            },
+          },
+        },
+        tags: {
+          include: {
+            tag: {
+              select: { 
+                id: true,
+                name: true 
+              },
+            },
+          },
+        },
+        comments: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            userId: true,
+            replyToId: true,
+            user: {
+              select: {
+                firstname: true,
+                lastname: true,
+              },
+            },
+            replies: {
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                userId: true,
+                user: {
+                  select: {
+                    firstname: true,
+                    lastname: true,
+                  },
+                },
+              },
+            },
+          },
+          where: {
+            replyToId: null, // Only get top-level comments
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        reactions: {
+          select: {
+            likes: true,
+            applause: true,
+            laugh: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            bookmarks: true,
+          },
+        },
+      },
+    });
+
+    if (!blog) {
+      return c.json({ message: "Blog not found" }, 404);
+    }
+
+    // Format the response
+    const formattedBlog = {
+      ...blog,
+      author: {
+        id: blog.user.id,
+        name: `${blog.user.firstname} ${blog.user.lastname}`.trim(),
+        email: blog.user.email,
+        userInfo: blog.user.userInfo,
+      },
+      user: undefined, // Remove the user object since we're using author
+    };
+
+    return c.json({ blog: formattedBlog });
+  } catch (error) {
+    console.error("Error fetching blog:", error);
+    return c.json({ message: "Error while fetching blog post" }, 500);
+  }
+});
+
+// -------------------- GET BLOG BY SLUG --------------------
+blogRouter.get("/slug/:slug", async (c) => {
+  const slug = c.req.param("slug");
+  const prisma = getPrismaClient(c, true);
+
+  try {
+    const blog = await prisma.blog.findUnique({
+      where: { 
+        slug: slug,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        body: true,
+        images: true,
+        createdAt: true,
+        views: true,
+        wordCount: true,
+        isPublished: true,
+        userId: true,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+            email: true,
+            userInfo: {
+              select: {
+                avatar: true,
+                intro: true,
+                tech: true,
+              },
+            },
+          },
+        },
+        tags: {
+          include: {
+            tag: {
+              select: { 
+                id: true,
+                name: true 
+              },
+            },
+          },
+        },
+        reactions: {
+          select: {
+            likes: true,
+            applause: true,
+            laugh: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            bookmarks: true,
+          },
+        },
+      },
+    });
+
+    if (!blog) {
+      return c.json({ message: "Blog not found" }, 404);
+    }
+
+    // Increment view count
+    await prisma.blog.update({
+      where: { id: blog.id },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
+
+    // Format the response
+    const formattedBlog = {
+      ...blog,
+      author: {
+        id: blog.user.id,
+        name: `${blog.user.firstname} ${blog.user.lastname}`.trim(),
+        email: blog.user.email,
+        userInfo: blog.user.userInfo,
+      },
+      user: undefined,
+    };
+
+    return c.json({ blog: formattedBlog });
+  } catch (error) {
+    console.error("Error fetching blog by slug:", error);
+    return c.json({ message: "Error while fetching blog post" }, 500);
   }
 });

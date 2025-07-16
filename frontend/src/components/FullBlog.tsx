@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Eye, Share2, Bookmark, Heart, MessageCircle, Send, Edit3, Save, X, ThumbsUp, Laugh } from 'lucide-react';
+import {set,get} from 'idb-keyval'
+import { useBeforeUnload } from 'react-router-dom';
 
 // Type definitions
 interface User {
@@ -253,6 +255,7 @@ const Comment: React.FC<CommentProps> = ({ comment, allComments, onReply, onDele
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
+ 
 
   return (
     <div className={`${level > 0 ? 'ml-6 border-l-2 border-gray-700 pl-4' : ''} mb-3`}>
@@ -448,6 +451,16 @@ export const FullBlog: React.FC<FullBlogProps> = ({ blog = sampleBlog }) => {
       drafts: []
     }
   });
+   useBeforeUnload(()=>{
+    set("PostReactions",userDB)
+  })
+ 
+useEffect(() => {
+  get('PostReactions').then((draft) => {
+    if (draft) setUserDB(draft);
+    console.log(draft)
+  });
+}, []);
 
   // Initialize user data
   useEffect(() => {
