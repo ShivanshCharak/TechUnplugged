@@ -1,10 +1,12 @@
 import { BubbleMenu, EditorContent, FloatingMenu, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import  { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import  './styles.css'
 
 
-export default function Tiptap({ onChange }: { onChange: (content: string) => void}) {
+
+export default function Tiptap({ onChange}: { onChange: (content: string) => void}) {
   const [height, setHeight] = useState('auto');
   const [isLoading, setIsLoading] = useState(true);
   const editorRef = useRef<HTMLDivElement | null>(null);
@@ -53,7 +55,7 @@ export default function Tiptap({ onChange }: { onChange: (content: string) => vo
 
     const computedHeight = editorRef.current.scrollHeight;
     const lines = Math.ceil(computedHeight / lineHeight);
-    setHeight(`${Math.max(lines * lineHeight, 400)}px`);
+    setHeight(`${Math.max(lines * lineHeight, 100)}px`);
   }, [lineHeight]);
 
   useEffect(() => {
@@ -75,7 +77,6 @@ export default function Tiptap({ onChange }: { onChange: (content: string) => vo
 
   return (
     <>
-     
       <div className="editor-container">
         {/* Enhanced Bubble Menu */}
         {editor && (

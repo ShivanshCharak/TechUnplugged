@@ -4,7 +4,7 @@ import { withAccelerate } from '@prisma/extension-accelerate';
 import { sign, verify } from 'hono/jwt';
 import { signupInput, signinInput } from "@100xdevs/medium-common";
 import {setCookie,getCookie} from 'hono/cookie'
-import {prisma }from '../test/__mock__/db'
+
 import bcrypt from 'bcryptjs';
 
 import { HTTPException } from 'hono/http-exception';
@@ -31,9 +31,9 @@ userRouter.post('/signup', async (c) => {
     throw new HTTPException(400, { message: "All fields are required" });
   }
 
-  // const prisma = new PrismaClient({
-  //   datasourceUrl: c.env.DATABASE_URL,
-  // }).$extends(withAccelerate());
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
 
   try {
     // Check if user already exists
@@ -140,9 +140,9 @@ userRouter.post('/refresh', async (c) => {
     return c.json({message:"Refresh token not found"},401)
   }
 
-  // const prisma = new PrismaClient({
-  //   datasourceUrl: c.env.DATABASE_URL,
-  // }).$extends(withAccelerate());
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
 
   try {
     // Verify the refresh token
@@ -231,16 +231,16 @@ userRouter.post('/logout', async (c) => {
 /**
  * USER LOGIN
  */
-userRouter.post('/login', async (c) => {
+userRouter.post('/signin', async (c) => {
   const { email, password } = await c.req.json();
 
   if (!email || !password) {
     throw new HTTPException(400, { message: "Email and password are required" });
   }
 
-  // const prisma = new PrismaClient({
-  //   datasourceUrl: c.env.DATABASE_URL,
-  // }).$extends(withAccelerate());
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });

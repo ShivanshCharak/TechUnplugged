@@ -19,7 +19,8 @@ export const blogRouter = new Hono<{
 
 function getPrismaClient(c: any, useReplica: boolean = false) {
   return new PrismaClient({
-    datasourceUrl: useReplica ? c.env.DATABASE_URL_REPLICA_1 : c.env.DATABASE_URL,
+    datasourceUrl: c.env.DATABASE_URL,
+    // useReplica ? c.env.DATABASE_URL_REPLICA_1 : 
   }).$extends(withAccelerate());
 }
 
@@ -70,12 +71,13 @@ blogRouter.post("/chatbot", async (c) => {
 });
 
 // -------------------- CREATE BLOG --------------------
-blogRouter.post("/", async (c) => {
+blogRouter.post("/create", async (c) => {
   console.log("Creating blog");
   const body = await c.req.json();
-  const { success } = createBlogInput.safeParse(body);
+  console.log(body)
+  // const { success } = createBlogInput.safeParse(body);
   
-  if (!success) return c.json({ message: "Inputs not correct" }, 411);
+  // if (!success) return c.json({ message: "Inputs not correct" }, 411);
 
   const prisma = getPrismaClient(c);
   
@@ -88,7 +90,7 @@ blogRouter.post("/", async (c) => {
         title: body.title,
         slug: slug,
         excerpt: body.excerpt || null,
-        body: body.content, // This will be stored as JSON
+        body: body.description, // This will be stored as JSON
         images: body.url || "",
         userId: body.id, // Assuming body.id is already a string
         wordCount: wordCount,
@@ -159,18 +161,6 @@ blogRouter.get("/bulk", async (c) => {
       where: {
         isDeleted: false,
         isPublished: true,
-      },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        images: true,
-        body: true,
-        createdAt: true,
-        views: true,
-        wordCount: true,
-        userId: true,
       },
       include: {
         user: {
@@ -268,19 +258,6 @@ blogRouter.get("/:id", async (c) => {
       where: { 
         id: id,
         isDeleted: false,
-      },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        body: true,
-        images: true,
-        createdAt: true,
-        views: true,
-        wordCount: true,
-        isPublished: true,
-        userId: true,
       },
       include: {
         user: {
