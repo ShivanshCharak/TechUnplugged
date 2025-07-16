@@ -1,6 +1,6 @@
 import { createContext, useState, ReactNode } from "react";
 
-// Define the user data interface
+
 interface UserData {
   id: string;
   email?: string;
@@ -8,13 +8,12 @@ interface UserData {
   [key: string]: any;
 }
 
-// Define the context type
+
 interface AuthContextType {
   authData: UserData | null;
   setAuthData: (data: UserData | null) => void;
 }
 
-// Create context with undefined as default (not null)
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function AuthProvider({ children }: { children: ReactNode }) {

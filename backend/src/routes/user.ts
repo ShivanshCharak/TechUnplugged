@@ -1,52 +1,55 @@
+
 import { Hono } from "hono";
-import { PrismaClient } from '@prisma/client/edge';
+import { PrismaClient, Prisma } from '@prisma/client/edge';
 import { withAccelerate } from '@prisma/extension-accelerate';
-import { sign, verify } from 'hono/jwt';
+import { sign, verify, JWTPayload as HonoJWTPayload } from 'hono/jwt';
 import { signupInput, signinInput } from "@100xdevs/medium-common";
-import {setCookie,getCookie} from 'hono/cookie'
-
+import { setCookie, getCookie } from 'hono/cookie';
 import bcrypt from 'bcryptjs';
-
 import { HTTPException } from 'hono/http-exception';
+import {
+  UserBindings,
+  UserVariables,
+  SignupInput,
+  SigninInput,
+  UpdateProfileInput,
+  JWTPayload,
+  RefreshTokenPayload,
+  UserResponse
+} from '../types/userTypes';
 
 export const userRouter = new Hono<{
-  Bindings: {
-    DATABASE_URL: string;
-    JWT_SECRET: string;
-    ACCESS_TOKEN_SECRET: string;
-    REFRESH_TOKEN_SECRET: string;
-  }
-}>()
+  Bindings: UserBindings;
+  Variables: UserVariables;
+}>();
+
+function getPrismaClient(c: any) {
+  return new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
+}
 
 /**
  * USER SIGNUP
  */
-
-
 userRouter.post('/signup', async (c) => {
-  const { firstname, lastname, email, password } = await c.req.json();
+  const body: SignupInput = await c.req.json();
+  const { firstname, lastname, email, password } = body;
   
-  // Validate input
   if (!firstname || !lastname || !email || !password) {
     throw new HTTPException(400, { message: "All fields are required" });
   }
 
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
+  const prisma = getPrismaClient(c);
 
   try {
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-     return c.json({ message: "User already exists" }, 409);
-
+      return c.json({ message: "User already exists" }, 409);
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         firstname,
@@ -57,21 +60,18 @@ userRouter.post('/signup', async (c) => {
       }
     });
 
+    const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60);
+    const refreshTokenExpiry = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000));
 
-    const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60); // 15 minutes
-    const refreshTokenExpiry = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)); // 7 days
+    const accessTokenPayload: JWTPayload = {
+      id: user.id,
+      isPremium: user.isPremium,
+      exp: accessTokenExpiry
+    };
 
-    const accessToken = await sign(
-      { 
-        id: user.id, 
-        isPremium: user.isPremium,
-        exp: accessTokenExpiry
-      },
-      c.env.ACCESS_TOKEN_SECRET
-    );
-    console.log(accessToken)
+    const accessToken = await sign(accessTokenPayload, c.env.ACCESS_TOKEN_SECRET);
 
-    const refreshTokenPayload = {
+    const refreshTokenPayload: RefreshTokenPayload = {
       jti: crypto.randomUUID(),
       userId: user.id,
       exp: Math.floor(refreshTokenExpiry.getTime() / 1000)
@@ -79,100 +79,81 @@ userRouter.post('/signup', async (c) => {
 
     const refreshToken = await sign(refreshTokenPayload, c.env.REFRESH_TOKEN_SECRET);
 
-    // Store refresh token in separate table
     await prisma.refreshToken.create({
       data: {
         token: refreshToken,
         userId: user.id,
         expiresAt: refreshTokenExpiry,
-        // Optional: Store device info
         deviceInfo: c.req.header('User-Agent') || 'Unknown',
         ipAddress: c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'Unknown'
       }
     });
 
-    // Set cookies
     setCookie(c, 'accessToken', accessToken, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60, // 15 minutes in seconds
+      maxAge: 15 * 60,
       path: '/'
     });
 
     setCookie(c, 'refreshToken', refreshToken, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+      maxAge: 7 * 24 * 60 * 60,
       path: '/auth/refresh'
     });
-    console.log({ message: `Welcome ${user.firstname} ${user.lastname}`,
-      user: {
-        id: user.id,
-        name: `${user.firstname} ${user.lastname}`,
-        email: user.email,
-        isPremium: user.isPremium
-      },
-      accessToken})
+
+    const userResponse: UserResponse = {
+      id: user.id,
+      name: `${user.firstname} ${user.lastname}`,
+      email: user.email,
+      isPremium: user.isPremium
+    };
+
     return c.json({
       message: `Welcome ${user.firstname} ${user.lastname}`,
-      user: {
-        id: user.id,
-        name: `${user.firstname} ${user.lastname}`,
-        email: user.email,
-        isPremium: user.isPremium
-      },
+      user: userResponse,
       accessToken
     }, 200);
 
   } catch (e) {
     console.error('Signup error:', e);
-    return c.json({message:"Internal server error"},500)
+    return c.json({ message: "Internal server error" }, 500);
   }
 });
 
-// Refresh Token Route
 userRouter.post('/refresh', async (c) => {
   const refreshToken = getCookie(c, 'refreshToken');
   
   if (!refreshToken) {
-    return c.json({message:"Refresh token not found"},401)
+    return c.json({ message: "Refresh token not found" }, 401);
   }
 
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
+  const prisma = getPrismaClient(c);
 
   try {
-    // Verify the refresh token
-    const payload = await verify(refreshToken, c.env.REFRESH_TOKEN_SECRET);
+    const payload = await verify(refreshToken, c.env.REFRESH_TOKEN_SECRET) as RefreshTokenPayload;
     
-    // Check if token exists in database and is not revoked
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
       include: { user: true }
     });
 
     if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
-       return c.json({message:"Invalid refresh token"},401)
+      return c.json({ message: "Invalid refresh token" }, 401);
     }
 
-    // Generate new access token
     const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60);
-    const newAccessToken = await sign(
-      { 
-        id: storedToken.user.id, 
-        isPremium: storedToken.user.isPremium,
-        exp: accessTokenExpiry
-      },
-      c.env.ACCESS_TOKEN_SECRET
-    );
+    const newAccessTokenPayload: JWTPayload = {
+      id: storedToken.user.id,
+      isPremium: storedToken.user.isPremium,
+      exp: accessTokenExpiry
+    };
 
-    // Set new access token cookie
+    const newAccessToken = await sign(newAccessTokenPayload, c.env.ACCESS_TOKEN_SECRET);
+
     setCookie(c, 'accessToken', newAccessToken, {
       httpOnly: true,
-      // secure: c.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 15 * 60,
       path: '/'
@@ -189,17 +170,13 @@ userRouter.post('/refresh', async (c) => {
   }
 });
 
-// Logout Route (revoke refresh token)
 userRouter.post('/logout', async (c) => {
   const refreshToken = getCookie(c, 'refreshToken');
   
   if (refreshToken) {
-    const prisma = new PrismaClient({
-      datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate());
+    const prisma = getPrismaClient(c);
 
     try {
-      // Revoke the refresh token
       await prisma.refreshToken.update({
         where: { token: refreshToken },
         data: { isRevoked: true }
@@ -209,10 +186,8 @@ userRouter.post('/logout', async (c) => {
     }
   }
 
-  // Clear cookies
   setCookie(c, 'accessToken', '', {
     httpOnly: true,
-    // secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 0,
     path: '/'
@@ -220,88 +195,86 @@ userRouter.post('/logout', async (c) => {
 
   setCookie(c, 'refreshToken', '', {
     httpOnly: true,
-    // secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 0,
     path: '/auth/refresh'
   });
 
-  return c.json({ message: "Logged out successfully" },200);
+  return c.json({ message: "Logged out successfully" }, 200);
 });
+
 /**
  * USER LOGIN
  */
 userRouter.post('/signin', async (c) => {
-  const { email, password } = await c.req.json();
+  const body: SigninInput = await c.req.json();
+  const { email, password } = body;
 
   if (!email || !password) {
     throw new HTTPException(400, { message: "Email and password are required" });
   }
 
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
+  const prisma = getPrismaClient(c);
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     
     if (!user) {
-      throw new HTTPException(401, { message: "Invalid credentials" }); // Changed to 401 for security
+      throw new HTTPException(401, { message: "Invalid credentials" });
     }
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      throw new HTTPException(401, { message: "Invalid credentials" }); // Consistent 401 for auth failures
+      throw new HTTPException(401, { message: "Invalid credentials" });
     }
 
-    // Generate tokens with proper expiration
-    const accessToken = await sign(
-      {
-        id: user.id,
-        isPremium: user.isPremium,
-        exp:12000
-        // Remove manual 'exp' - use the sign() options instead
-      },
-      c.env.ACCESS_TOKEN_SECRET, // Recommended way to set expiration
-    );
-    
-    const refreshToken = await sign(
-      {
-        id: user.id,
-        jti: crypto.randomUUID(),
-        exp:12000
-      },
-      c.env.REFRESH_TOKEN_SECRET,
+    const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60);
+    const refreshTokenExpiry = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
 
-    );
+    const accessTokenPayload: JWTPayload = {
+      id: user.id,
+      name: `${user.firstname} ${user.lastname}`,
+      email: user.email,
+      isPremium: user.isPremium,
+      exp: accessTokenExpiry
+    };
 
-    // Set secure cookies - using c.cookie() instead of setCookie()
-    setCookie(c,'accessToken', accessToken, {
+    const refreshTokenPayload: RefreshTokenPayload = {
+      jti: crypto.randomUUID(),
+      userId: user.id,
+      exp: refreshTokenExpiry
+    };
+
+    const accessToken = await sign(accessTokenPayload, c.env.ACCESS_TOKEN_SECRET);
+    const refreshToken = await sign(refreshTokenPayload, c.env.REFRESH_TOKEN_SECRET);
+
+    setCookie(c, 'accessToken', accessToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60,
       path: '/'
     });
 
-    setCookie(c,'refreshToken', refreshToken, {
+    setCookie(c, 'refreshToken', refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 10, // 7 days
+      maxAge: 7 * 24 * 60 * 60,
       path: '/auth/refresh'
     });
 
+    const userResponse: UserResponse = {
+      id: user.id,
+      name: `${user.firstname} ${user.lastname}`,
+      email: user.email,
+      isPremium: user.isPremium
+    };
+
     return c.json({ 
       message: `Welcome back ${user.firstname} ${user.lastname}`,
-      user: {
-        id: user.id,
-        name: `${user.firstname} ${user.lastname}`,
-        email: user.email,
-        isPremium: user.isPremium
-      },
-      // Consider including the access token in the response too
-      accessToken // For clients that prefer to store it in memory
+      user: userResponse,
+      accessToken 
     });
 
   } catch (e) {
@@ -312,19 +285,18 @@ userRouter.post('/signin', async (c) => {
     throw new HTTPException(500, { message: "Internal server error" });
   }
 });
+
 /**
  * UPDATE USER PROFILE
  */
 userRouter.put("/update", async (c) => {
-  // 1. Get the authenticated user ID from the token
-  const userId = c.get('userId'); // Assuming you set this in authentication middleware
-  const body = await c.req.json();
+  const userId = c.get('userId');
+  const body: UpdateProfileInput = await c.req.json();
 
   if (!userId) {
     throw new HTTPException(401, { message: "Unauthorized" });
   }
 
-  // 2. Input validation
   if (body.avatar && typeof body.avatar !== 'string') {
     throw new HTTPException(400, { message: "Avatar must be a string URL" });
   }
@@ -335,12 +307,9 @@ userRouter.put("/update", async (c) => {
     throw new HTTPException(400, { message: "Tech must be an array" });
   }
 
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
+  const prisma = getPrismaClient(c);
 
   try {
-    // 3. Verify user exists
     const userExists = await prisma.user.findUnique({
       where: { id: userId }
     });
@@ -348,20 +317,24 @@ userRouter.put("/update", async (c) => {
       throw new HTTPException(404, { message: "User not found" });
     }
 
-    // 4. Prepare update data
-    const updateData = {
-      ...(body.avatar !== undefined && { 
-        avatar: body.avatar.trim() // Trim whitespace
-      }),
-      ...(body.intro !== undefined && { 
-        intro: body.intro.trim().substring(0, 500) // Limit length
-      }),
-      ...(body.tech !== undefined && { 
-        tech: body.tech.filter(t => typeof t === 'string').slice(0, 10) // Validate and limit
-      }),
-    };
+    const updateData: Partial<{
+      avatar: string;
+      intro: string;
+      tech: string[];
+    }> = {};
 
-    // 5. Update or create user info
+    if (body.avatar !== undefined) {
+      updateData.avatar = body.avatar.trim();
+    }
+    if (body.intro !== undefined) {
+      updateData.intro = body.intro.trim().substring(0, 500);
+    }
+    if (body.tech !== undefined) {
+      updateData.tech = body.tech
+        .filter((t): t is string => typeof t === 'string')
+        .slice(0, 10);
+    }
+
     const updatedUser = await prisma.userInfo.upsert({
       where: { userId },
       update: updateData,
@@ -380,7 +353,6 @@ userRouter.put("/update", async (c) => {
       }
     });
 
-    // 6. Return updated profile (excluding sensitive data)
     return c.json({ 
       message: "Profile updated successfully",
       profile: {

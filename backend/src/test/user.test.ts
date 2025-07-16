@@ -1,10 +1,7 @@
 import { describe, it, expect, test, vi, beforeEach, beforeAll } from "vitest";
 import { Hono } from "hono";
-import { PrismaClient } from "@prisma/client/edge";
 import app from "..";
-import { withAccelerate } from "@prisma/extension-accelerate";
 import { sign, verify } from "hono/jwt";
-import { mock } from "vitest-mock-extended";
 import { prisma } from './__mock__/db'
 import bcrypt from "bcryptjs";
 
@@ -56,7 +53,7 @@ const mockRefreshTokenData = {
 
 describe('User Router     -     TEST CASES', () => {
   beforeEach(() => {
-    // Clear all mocks before each test
+
     vi.clearAllMocks();
     vi.mocked(bcrypt.hash).mockResolvedValue("hashedPassword123")
     vi.mocked(sign).mockResolvedValue('mocked-jwt-token')
@@ -72,9 +69,9 @@ describe('User Router     -     TEST CASES', () => {
     };
 
     it("should successfully create a new user", async () => {
-      // Setup mocks properly
-      prisma.user.findUnique.mockResolvedValueOnce(null); // First call - user doesn't exist
-      prisma.user.create.mockResolvedValueOnce(mockUserData); // Create user
+ 
+      prisma.user.findUnique.mockResolvedValueOnce(null); 
+      prisma.user.create.mockResolvedValueOnce(mockUserData); 
       prisma.refreshToken.create.mockResolvedValue(mockRefreshTokenData)
 
       const res = await app.fetch(new Request('http://localhost/api/v1/user/signup', {
@@ -135,7 +132,8 @@ describe('User Router     -     TEST CASES', () => {
     })
 
     it("should return 409 if user already exists", async () => {
-      //   // Setup mock to return existing user
+
+
       prisma.user.findUnique.mockResolvedValueOnce(mockUserData);
 
       const res = await app.fetch(new Request('http://localhost/api/v1/user/signup', {
@@ -147,7 +145,7 @@ describe('User Router     -     TEST CASES', () => {
       }), {
         mockEnv
       });
-      // 
+   
       expect(res.status).toBe(409);
     });
     it("should handle database errors gracefully", async () => {
@@ -300,18 +298,10 @@ describe('User Router     -     TEST CASES', () => {
   })
 })
 
-// describe("POST /auth/update", ()=>{
-//   beforeAll(()=>{
-
-//   })
-//   it("", async()=>{
-
-//   })
-// })
 
  describe('Performance Tests', () => {
     it('should handle concurrent signup requests', async () => {
-      // Arrange
+     
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue(mockUserData);
       prisma.refreshToken.create.mockResolvedValue(mockRefreshTokenData);
@@ -331,10 +321,9 @@ describe('User Router     -     TEST CASES', () => {
         }, mockEnv)
       ));
 
-      // Act
+ 
       const responses = await Promise.all(requests);
 
-      // Assert
       responses.forEach(response => {
         expect(response.status).toBe(200);
       });

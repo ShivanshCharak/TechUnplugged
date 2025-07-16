@@ -5,7 +5,6 @@ import { blogRouter } from '../routes/blog';
 import { PrismaClient } from '@prisma/client/edge';
 import { Groq } from 'groq-sdk/index.mjs';
 
-// Mock dependencies
 vi.mock('@prisma/client/edge', () => ({
   PrismaClient: vi.fn().mockImplementation(() => ({
     $extends: vi.fn().mockReturnThis(),
@@ -69,7 +68,7 @@ describe('Blog Router', () => {
       },
     };
 
-    // Mock the PrismaClient constructor to return our mock
+    
     vi.mocked(PrismaClient).mockImplementation(() => ({
       $extends: vi.fn().mockReturnValue(mockPrisma),
     }) as any);

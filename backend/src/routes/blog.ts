@@ -24,23 +24,23 @@ function getPrismaClient(c: any, useReplica: boolean = false) {
   }).$extends(withAccelerate());
 }
 
-// Helper function to generate slug from title
+
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/--+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/[^\w\s-]/g, '') 
+    .replace(/\s+/g, '-')  
+    .replace(/--+/g, '-') 
     .trim();
 }
 
-// Helper function to count words in content
+
 function countWords(content: any): number {
   if (typeof content === 'string') {
     return content.trim().split(/\s+/).filter(word => word.length > 0).length;
   }
   if (typeof content === 'object') {
-    // If content is JSON, convert to string and count words
+    
     const textContent = JSON.stringify(content).replace(/[{}[\]",:]/g, ' ');
     return textContent.trim().split(/\s+/).filter(word => word.length > 0).length;
   }
@@ -75,7 +75,7 @@ blogRouter.post("/create", async (c) => {
   console.log("Creating blog");
   const body = await c.req.json();
   console.log(body)
-  // const { success } = createBlogInput.safeParse(body);
+  // const { success } = createBlogInput.safeParse
   
   // if (!success) return c.json({ message: "Inputs not correct" }, 411);
 
@@ -90,9 +90,9 @@ blogRouter.post("/create", async (c) => {
         title: body.title,
         slug: slug,
         excerpt: body.excerpt || null,
-        body: body.description, // This will be stored as JSON
+        body: body.description, 
         images: body.url || "",
-        userId: body.id, // Assuming body.id is already a string
+        userId: body.id, 
         wordCount: wordCount,
         isPublished: body.isPublished || false,
       },
@@ -120,22 +120,22 @@ blogRouter.put("/", async (c) => {
       body: body.content,
     };
 
-    // Update slug if title changed
+    
     if (body.title) {
       updateData.slug = generateSlug(body.title);
     }
 
-    // Update word count if content changed
+    
     if (body.content) {
       updateData.wordCount = countWords(body.content);
     }
 
-    // Update excerpt if provided
+    
     if (body.excerpt) {
       updateData.excerpt = body.excerpt;
     }
 
-    // Update published status if provided
+    
     if (typeof body.isPublished === 'boolean') {
       updateData.isPublished = body.isPublished;
     }
@@ -198,7 +198,7 @@ blogRouter.get("/bulk", async (c) => {
           where: {
             replyToId: null, // Only get top-level comments
           },
-          take: 5, // Limit to 5 comments for performance
+          take: 5, 
         },
         reactions: {
           select: {
@@ -244,7 +244,7 @@ blogRouter.get("/:id", async (c) => {
   const prisma = getPrismaClient(c, true);
 
   try {
-    // First, increment the view count
+    
     await prisma.blog.update({
       where: { id: id },
       data: {
@@ -340,7 +340,7 @@ blogRouter.get("/:id", async (c) => {
       return c.json({ message: "Blog not found" }, 404);
     }
 
-    // Format the response
+    
     const formattedBlog = {
       ...blog,
       author: {
@@ -349,7 +349,7 @@ blogRouter.get("/:id", async (c) => {
         email: blog.user.email,
         userInfo: blog.user.userInfo,
       },
-      user: undefined, // Remove the user object since we're using author
+      user: undefined, 
     };
 
     return c.json({ blog: formattedBlog });
@@ -429,7 +429,7 @@ blogRouter.get("/slug/:slug", async (c) => {
       return c.json({ message: "Blog not found" }, 404);
     }
 
-    // Increment view count
+    
     await prisma.blog.update({
       where: { id: blog.id },
       data: {
@@ -439,7 +439,7 @@ blogRouter.get("/slug/:slug", async (c) => {
       },
     });
 
-    // Format the response
+    
     const formattedBlog = {
       ...blog,
       author: {

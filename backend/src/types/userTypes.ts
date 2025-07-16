@@ -32,6 +32,8 @@ export interface JWTPayload {
   id: string;
   isPremium: boolean;
   exp: number;
+  name:string,
+  email:string,
 }
 
 export interface RefreshTokenPayload {
