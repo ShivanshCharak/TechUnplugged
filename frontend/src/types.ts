@@ -172,6 +172,7 @@ export interface IBlogReactions {
   reactions: Reactions;
   bookmarks: string[];
   drafts: Draft[];
+  comments:comment[]
 }
 
 // Props interfaces

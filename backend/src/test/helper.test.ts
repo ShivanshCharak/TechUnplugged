@@ -64,7 +64,7 @@ describe('Blog Helpers', () => {
 
     it('should count words in JSON object', () => {
       const jsonContent = { title: 'Test', content: 'Hello world' };
-      expect(countWords(jsonContent)).toBe(4); // "Test", "Hello", "world", "content"
+      expect(countWords(jsonContent)).toBe(4); 
     });
 
     it('should handle null/undefined', () => {

@@ -37,7 +37,6 @@ export const CommentInput: React.FC<CommentInputProps> = ({
             className="w-full bg-gray-800 text-white p-3 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none resize-none"
             rows={3}
           />
-          
           <DraftManager
             drafts={drafts}
             onSaveDraft={onSaveDraft}

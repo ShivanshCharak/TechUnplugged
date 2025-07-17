@@ -37,8 +37,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   onDeleteComment,
   currentUserId
 }) => {
-  const topLevelComments = comments;
-  console.log(topLevelComments)
+  const topLevelComments = comments.filter(c => !c.replyToId);
   return (
     <div className="mt-12 border-t border-gray-800 pt-8">
       <div className="flex items-center justify-between mb-6">
@@ -70,16 +69,16 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
 
           {/* Comments List */}
           <div>
-            {topLevelComments.map((comment) => (
-              <Comment
+            {topLevelComments.map((comment) => {
+                return <Comment
                 key={comment.id}
                 comment={comment}
                 allComments={comments}
                 onReply={onReply}
                 onDelete={onDeleteComment}
                 currentUserId={currentUserId}
-              />
-            ))}
+                />
+})}
           </div>
         </div>
       )}

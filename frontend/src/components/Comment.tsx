@@ -8,10 +8,9 @@ export const Comment: React.FC<CommentProps> = ({ comment, allComments, onReply,
   const [replyText, setReplyText] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // Find direct replies to this comment
+
   const replies = allComments.filter(c => c.replyToId === comment.id);
   const isOwner = comment.userId === currentUserId;
-
   const handleReply = () => {
     if (replyText.trim()) {
       onReply(comment.id, replyText);
