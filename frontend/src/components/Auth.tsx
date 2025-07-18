@@ -118,10 +118,10 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
                             {type === "signup" ? "Sign up" : "Sign in"}
                         </button>
                         
-                        <section className="flex w-full justify-center group mt-[5%]" onClick={() => navigate("/")}>
+                        {/* <section className="flex w-full justify-center group mt-[5%]" onClick={() => navigate("/")}>
                             <img className="group-hover:-translate-x-1 duration-400 transition-all mr-1" width={20} height={20} src={arrowLeft} alt="" />
                             <button className="group-hover:translate-x-1 duration-400 transition-all text-sm">Back to Home</button>
-                        </section>
+                        </section> */}
                     </div>
                 </div>
             </div>

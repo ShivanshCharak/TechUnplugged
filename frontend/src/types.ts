@@ -140,6 +140,8 @@ export interface comment {
   createdAt: string;
   userId: string;
   blogId?: string;
+  _syncFailed?:boolean;
+  _pendingSync?:boolean
   
   replyToId: string | null;
 }
@@ -172,7 +174,9 @@ export interface IBlogReactions {
   reactions: Reactions;
   bookmarks: string[];
   drafts: Draft[];
-  comments:comment[]
+  comments:comment[];
+  
+  
 }
 
 // Props interfaces

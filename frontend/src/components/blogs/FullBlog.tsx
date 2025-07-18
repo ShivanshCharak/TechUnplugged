@@ -1,9 +1,9 @@
 import React from 'react';
-import { FullBlogProps } from '../types';
-import { useBlogData } from '../hooks/useBlogData';
+import { FullBlogProps } from '../../types';
+import { useBlogData } from '../../hooks/useBlogData';
 import { BlogHero } from './BlogHero';
-import { ReactionButtons } from './ReactionButtons';
-import { CommentsSection } from './CommentSection';
+import { ReactionButtons } from '../ReactionButtons';
+import { CommentsSection } from '../comments/CommentSection';
 import { BlogSidebar } from './BlogSidebar';
 
 export const FullBlog: React.FC<FullBlogProps> = ({ blog }) => {

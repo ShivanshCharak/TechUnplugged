@@ -1,8 +1,8 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
-import { CommentInput } from './CommentInput'
+import { CommentInput } from './CommentInput';
 import { Comment } from './Comment';
-import { comment, Draft } from '../types';
+import { comment, Draft } from '../../types';
 
 interface CommentsSectionProps {
   comments: comment[];

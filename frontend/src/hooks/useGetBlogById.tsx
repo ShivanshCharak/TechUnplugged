@@ -11,7 +11,7 @@ export const useBlog = ({ id }: { id: string }): UseBlogReturn => {
       try {
         setLoading(true);
         
-        // Replace this with your actual API endpoint
+        
         const response = await fetch(`http://localhost:8787/api/v1/blog/${id}`, {
           method: "GET",
           headers: {

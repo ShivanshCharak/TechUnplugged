@@ -1,8 +1,8 @@
 import React from 'react';
 import { Send, Save } from 'lucide-react';
-import { Avatar } from './Avatar';
-import { DraftManager } from './DraftManager';
-import { Draft } from '../types';
+import { Avatar } from '../Avatar';
+import { DraftManager } from '../DraftManager';
+import { Draft } from '../../types';
 
 interface CommentInputProps {
   newComment: string;

@@ -1,6 +1,6 @@
-import crown from '../assets/crown.svg'
-import person from '../assets/person.svg'
-import wand from '../assets/wand.svg'
+import crown from '../../assets/crown.svg'
+import person from '../../assets/person.svg'
+import wand from '../../assets/wand.svg'
 import { useState } from 'react'
 export default function BlogHeader(){
     const [activeHeader,setActiveHeader] = useState<String>("Personalized")

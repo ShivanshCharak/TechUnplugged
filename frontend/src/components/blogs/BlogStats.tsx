@@ -1,4 +1,4 @@
-import { BlogStatsProps } from "../types";
+import { BlogStatsProps } from "../../types";
 
 export const BlogStats: React.FC<BlogStatsProps> = ({ 
   totalBlogs, 

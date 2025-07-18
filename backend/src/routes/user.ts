@@ -1,4 +1,3 @@
-
 import { Hono } from "hono";
 import { PrismaClient, Prisma } from '@prisma/client/edge';
 import { withAccelerate } from '@prisma/extension-accelerate';
@@ -6,7 +5,6 @@ import { sign, verify, JWTPayload as HonoJWTPayload } from 'hono/jwt';
 import { signupInput, signinInput } from "@100xdevs/medium-common";
 import { setCookie, getCookie } from 'hono/cookie';
 import bcrypt from 'bcryptjs';
-import { HTTPException } from 'hono/http-exception';
 import {
   UserBindings,
   UserVariables,
@@ -17,6 +15,7 @@ import {
   RefreshTokenPayload,
   UserResponse
 } from '../types/userTypes';
+import { blogRouter } from "./blog";
 
 export const userRouter = new Hono<{
   Bindings: UserBindings;
@@ -35,9 +34,12 @@ function getPrismaClient(c: any) {
 userRouter.post('/signup', async (c) => {
   const body: SignupInput = await c.req.json();
   const { firstname, lastname, email, password } = body;
-  
+
   if (!firstname || !lastname || !email || !password) {
-    throw new HTTPException(400, { message: "All fields are required" });
+    return c.json({ 
+      message: "All fields are required",
+      error: "MISSING_FIELDS" 
+    }, 400);
   }
 
   const prisma = getPrismaClient(c);
@@ -45,7 +47,10 @@ userRouter.post('/signup', async (c) => {
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return c.json({ message: "User already exists" }, 409);
+      return c.json({ 
+        message: "User already exists",
+        error: "USER_EXISTS" 
+      }, 409);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -118,7 +123,10 @@ userRouter.post('/signup', async (c) => {
 
   } catch (e) {
     console.error('Signup error:', e);
-    return c.json({ message: "Internal server error" }, 500);
+    return c.json({ 
+      message: "Internal server error",
+      error: "SERVER_ERROR" 
+    }, 500);
   }
 });
 
@@ -126,21 +134,27 @@ userRouter.post('/refresh', async (c) => {
   const refreshToken = getCookie(c, 'refreshToken');
   
   if (!refreshToken) {
-    return c.json({ message: "Refresh token not found" }, 401);
+    return c.json({ 
+      message: "Refresh token not found",
+      error: "MISSING_REFRESH_TOKEN" 
+    }, 401);
   }
 
   const prisma = getPrismaClient(c);
 
   try {
     const payload = await verify(refreshToken, c.env.REFRESH_TOKEN_SECRET) as RefreshTokenPayload;
-    
+
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
       include: { user: true }
     });
 
     if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
-      return c.json({ message: "Invalid refresh token" }, 401);
+      return c.json({ 
+        message: "Invalid refresh token",
+        error: "INVALID_REFRESH_TOKEN" 
+      }, 401);
     }
 
     const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60);
@@ -166,16 +180,18 @@ userRouter.post('/refresh', async (c) => {
 
   } catch (e) {
     console.error('Token refresh error:', e);
-    throw new HTTPException(401, { message: "Invalid refresh token" });
+    return c.json({ 
+      message: "Invalid refresh token",
+      error: "TOKEN_REFRESH_FAILED" 
+    }, 401);
   }
 });
 
 userRouter.post('/logout', async (c) => {
   const refreshToken = getCookie(c, 'refreshToken');
-  
+
   if (refreshToken) {
     const prisma = getPrismaClient(c);
-
     try {
       await prisma.refreshToken.update({
         where: { token: refreshToken },
@@ -208,24 +224,35 @@ userRouter.post('/logout', async (c) => {
  */
 userRouter.post('/signin', async (c) => {
   const body: SigninInput = await c.req.json();
+  console.log(body)
   const { email, password } = body;
 
   if (!email || !password) {
-    throw new HTTPException(400, { message: "Email and password are required" });
+    return c.json({ 
+      message: "Email and password are required",
+      error: "MISSING_CREDENTIALS" 
+    }, 400);
   }
 
   const prisma = getPrismaClient(c);
 
   try {
+    {console.log("inside")}
     const user = await prisma.user.findUnique({ where: { email } });
-    
     if (!user) {
-      throw new HTTPException(401, { message: "Invalid credentials" });
+      return c.json({ 
+        message: "Invalid credentials",
+        error: "INVALID_CREDENTIALS" 
+      }, 401);
     }
+
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      throw new HTTPException(401, { message: "Invalid credentials" });
+      return c.json({ 
+        message: "Invalid credentials",
+        error: "INVALID_CREDENTIALS" 
+      }, 401);
     }
 
     const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60);
@@ -271,18 +298,18 @@ userRouter.post('/signin', async (c) => {
       isPremium: user.isPremium
     };
 
-    return c.json({ 
+    return c.json({
       message: `Welcome back ${user.firstname} ${user.lastname}`,
       user: userResponse,
-      accessToken 
+      accessToken
     });
 
   } catch (e) {
     console.error('Login error:', e);
-    if (e instanceof HTTPException) {
-      throw e;
-    }
-    throw new HTTPException(500, { message: "Internal server error" });
+    return c.json({ 
+      message: "Internal server error",
+      error: "SERVER_ERROR" 
+    }, 500);
   }
 });
 
@@ -294,17 +321,31 @@ userRouter.put("/update", async (c) => {
   const body: UpdateProfileInput = await c.req.json();
 
   if (!userId) {
-    throw new HTTPException(401, { message: "Unauthorized" });
+    return c.json({ 
+      message: "Unauthorized",
+      error: "UNAUTHORIZED" 
+    }, 401);
   }
 
   if (body.avatar && typeof body.avatar !== 'string') {
-    throw new HTTPException(400, { message: "Avatar must be a string URL" });
+    return c.json({ 
+      message: "Avatar must be a string URL",
+      error: "INVALID_AVATAR_TYPE" 
+    }, 400);
   }
+
   if (body.intro && typeof body.intro !== 'string') {
-    throw new HTTPException(400, { message: "Intro must be a string" });
+    return c.json({ 
+      message: "Intro must be a string",
+      error: "INVALID_INTRO_TYPE" 
+    }, 400);
   }
+
   if (body.tech && !Array.isArray(body.tech)) {
-    throw new HTTPException(400, { message: "Tech must be an array" });
+    return c.json({ 
+      message: "Tech must be an array",
+      error: "INVALID_TECH_TYPE" 
+    }, 400);
   }
 
   const prisma = getPrismaClient(c);
@@ -313,8 +354,12 @@ userRouter.put("/update", async (c) => {
     const userExists = await prisma.user.findUnique({
       where: { id: userId }
     });
+
     if (!userExists) {
-      throw new HTTPException(404, { message: "User not found" });
+      return c.json({ 
+        message: "User not found",
+        error: "USER_NOT_FOUND" 
+      }, 404);
     }
 
     const updateData: Partial<{
@@ -326,9 +371,11 @@ userRouter.put("/update", async (c) => {
     if (body.avatar !== undefined) {
       updateData.avatar = body.avatar.trim();
     }
+
     if (body.intro !== undefined) {
       updateData.intro = body.intro.trim().substring(0, 500);
     }
+
     if (body.tech !== undefined) {
       updateData.tech = body.tech
         .filter((t): t is string => typeof t === 'string')
@@ -353,7 +400,7 @@ userRouter.put("/update", async (c) => {
       }
     });
 
-    return c.json({ 
+    return c.json({
       message: "Profile updated successfully",
       profile: {
         avatar: updatedUser.avatar,
@@ -366,14 +413,141 @@ userRouter.put("/update", async (c) => {
 
   } catch (e) {
     console.error('Update error:', e);
+    
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       if (e.code === 'P2002') {
-        throw new HTTPException(409, { message: "Profile update conflict" });
+        return c.json({ 
+          message: "Profile update conflict",
+          error: "UPDATE_CONFLICT" 
+        }, 409);
       }
     }
-    if (e instanceof HTTPException) {
-      throw e;
+
+    return c.json({ 
+      message: "Failed to update profile",
+      error: "UPDATE_FAILED" 
+    }, 500);
+  }
+});
+
+userRouter.get("/:id", async (c) => {
+  try {
+    const userId = c.req.param('id');
+    const prisma = getPrismaClient(c)
+    
+    // Validate if ID is provided
+    if (!userId) {
+      return c.json({ 
+        message: "User ID is required" 
+      }, 400);
     }
-    throw new HTTPException(500, { message: "Failed to update profile" });
+    
+    // Fetch user data with their info
+    const userData = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        id: true,
+        email: true,
+        firstname: true,
+        lastname: true,
+        createdAt: true,
+        // Include UserInfo relation
+        userInfo: {
+          select: {
+            id: true,
+            avatar: true,
+            intro: true,
+            tech: true
+          }
+        },
+        followers:{
+          select:{
+            id:true,
+            followerId:true,
+            followingId:true,
+          }
+        },
+        following:{
+          select:{
+            id:true,
+            follower:true,
+            following:true
+          }
+        },
+        // You can include other relations if needed
+        blogs: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            createdAt: true,
+            isPublished: true
+          },
+          where: {
+            isPublished: true // Only show published blogs
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 10 // Limit to recent 10 blogs
+        },
+        _count: {
+          select: {
+            blogs: true,
+            comments: true,
+            bookmarks: true
+          }
+        }
+      }
+    });
+    
+    // Check if user exists
+    if (!userData) {
+      return c.json({ 
+        message: "User not found" 
+      }, 404);
+    }
+    
+    // Format the response
+    const formattedResponse = {
+      id: userData.id,
+      email: userData.email,
+      firstname: userData.firstname,
+      lastname: userData.lastname,
+      fullName: `${userData.firstname} ${userData.lastname}`.trim(),
+      memberSince: userData.createdAt,
+      profile: userData.userInfo || {
+        avatar: null,
+        intro: null,
+        tech: null
+      },
+      follower:userData.followers.length|| null,
+      following:userData.following.length||null,
+      recentBlogs: userData.blogs,
+      stats: {
+        totalBlogs: userData._count.blogs,
+        totalComments: userData._count.comments,
+        totalBookmarks: userData._count.bookmarks
+      }
+    };
+    
+    return c.json(formattedResponse, 200);
+    
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    
+    // Handle Prisma errors
+    if (error.code === 'P2025') {
+      return c.json({ 
+        message: "User not found" 
+      }, 404);
+    }
+    
+    return c.json({ 
+      message: "Failed to fetch user data",
+      error: error
+    }, 500);
   }
 });

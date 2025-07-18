@@ -5,6 +5,7 @@ import { createBlogInput, updateBlogInput } from "@100xdevs/medium-common";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 
+
 export const blogRouter = new Hono<{
   Bindings: {
     DATABASE_URL: string;
@@ -238,7 +239,7 @@ blogRouter.get("/bulk", async (c) => {
   }
 });
 
-// -------------------- GET SINGLE BLOG --------------------
+// // -------------------- GET SINGLE BLOG --------------------
 blogRouter.get("/:id", async (c) => {
   const id = c.req.param("id");
   const prisma = getPrismaClient(c, true);
@@ -359,101 +360,65 @@ blogRouter.get("/:id", async (c) => {
   }
 });
 
-// -------------------- GET BLOG BY SLUG --------------------
-blogRouter.get("/slug/:slug", async (c) => {
-  const slug = c.req.param("slug");
-  const prisma = getPrismaClient(c, true);
 
+// -------------------- GET BLOG BY SLUG --------------------
+
+blogRouter.post("/comments", async (c) => {
   try {
-    const blog = await prisma.blog.findUnique({
-      where: { 
-        slug: slug,
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        body: true,
-        images: true,
-        createdAt: true,
-        views: true,
-        wordCount: true,
-        isPublished: true,
-        userId: true,
+    
+    const commentData = await c.req.json();
+    const prisma = getPrismaClient(c,true)
+    
+    // Validate required fields
+    if (!commentData.blogId || !commentData.userId || !commentData.content) {
+      return c.json({ 
+        message: "Missing required fields: blogId, userId, or content" 
+      }, 400);
+    }
+    
+    // Save to database using Prisma
+    const savedComment = await prisma.comment.create({
+      data: {
+        blogId: commentData.blogId,
+        userId: commentData.userId,
+        content: commentData.content,
+        replyToId: commentData.replyToId || null
       },
       include: {
         user: {
           select: {
             id: true,
             firstname: true,
-            lastname: true,
-            email: true,
-            userInfo: {
-              select: {
-                avatar: true,
-                intro: true,
-                tech: true,
-              },
-            },
-          },
+            lastname: true
+          }
         },
-        tags: {
-          include: {
-            tag: {
-              select: { 
-                id: true,
-                name: true 
-              },
-            },
-          },
-        },
-        reactions: {
-          select: {
-            likes: true,
-            applause: true,
-            laugh: true,
-          },
-        },
-        _count: {
-          select: {
-            comments: true,
-            bookmarks: true,
-          },
-        },
-      },
+        replies: true
+      }
     });
-
-    if (!blog) {
-      return c.json({ message: "Blog not found" }, 404);
-    }
-
     
-    await prisma.blog.update({
-      where: { id: blog.id },
-      data: {
-        views: {
-          increment: 1,
-        },
+    // Format the response to match frontend expectations
+    const formattedComment = {
+      id: savedComment.id,
+      blogId: savedComment.blogId,
+      userId: savedComment.userId,
+      content: savedComment.content,
+      createdAt: savedComment.createdAt.toISOString(),
+      replyToId: savedComment.replyToId,
+      user: {
+        firstname: savedComment.user.firstname,
+        lastname: savedComment.user.lastname
       },
-    });
-
-    
-    const formattedBlog = {
-      ...blog,
-      author: {
-        id: blog.user.id,
-        name: `${blog.user.firstname} ${blog.user.lastname}`.trim(),
-        email: blog.user.email,
-        userInfo: blog.user.userInfo,
-      },
-      user: undefined,
+      _pendingSync: false,
+      _syncFailed: false
     };
-
-    return c.json({ blog: formattedBlog });
+    
+    return c.json(formattedComment, 200);
+    
   } catch (error) {
-    console.error("Error fetching blog by slug:", error);
-    return c.json({ message: "Error while fetching blog post" }, 500);
+    console.error("Error saving comment:", error);
+    return c.json({ 
+      message: "Failed to save comment", 
+      error: error 
+    }, 500);
   }
 });

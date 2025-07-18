@@ -5,6 +5,7 @@ export class AuthService{
     static getJsonAccessData():IUserTokenPayload{
         console.log("getting called")
             const token  = localStorage.getItem(this.ACCESS_TOKEN_KEY)
+            
             if(!token) return null
             const decoded = jwtDecode<IUserTokenPayload>(token)
             console.log(decoded)

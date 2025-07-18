@@ -3,6 +3,7 @@ import { Search, Plus, FileText, Settings, Home, Eye, Edit3, Upload, Save, Chevr
 import Tiptap from './TextEditor';
 import { jwtDecode } from 'jwt-decode';
 import { AuthContext } from '../utils/context/userContext';
+import { BACKEND_URL } from '../config';
 
 // Type definitions
 interface UserData {
@@ -144,7 +145,7 @@ export const Publish: React.FC = () => {
         }
       }
 
-      const response = await fetch('http://localhost:8787/api/v1/blog/create', {
+      const response = await fetch(`http://localhost:8787/api/v1/blog/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

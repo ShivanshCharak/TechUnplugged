@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Appbar } from "../components/Appbar";
-import { FullBlog } from "../components/FullBlog";
+import { FullBlog } from "../components/blogs/FullBlog";
 import { Spinner } from "../components/Spinner";
 import { UseBlogReturn,Blog } from "../types";
 import { useBlog } from "../hooks";

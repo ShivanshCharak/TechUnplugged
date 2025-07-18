@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CommentProps } from "../types";
-import { Avatar } from "./BlogCard";
+import { CommentProps } from "../../types";
+import { Avatar } from "../blogs/BlogCard";
 import { X } from "lucide-react";
 
 export const Comment: React.FC<CommentProps> = ({ comment, allComments, onReply, onDelete, currentUserId, level = 0 }) => {
@@ -44,8 +44,9 @@ export const Comment: React.FC<CommentProps> = ({ comment, allComments, onReply,
               </svg>
             )}
           </button>
-          
-          <Avatar size="small" name={comment.user.firstname+comment.user.lastname} />
+        
+          {comment.user?<>
+           (<Avatar size="small" name={comment.user.firstname+comment.user.lastname} />
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center space-x-2">
@@ -115,7 +116,9 @@ export const Comment: React.FC<CommentProps> = ({ comment, allComments, onReply,
                 [Thread collapsed - {replies.length} {replies.length === 1 ? 'reply' : 'replies'}]
               </p>
             )}
-          </div>
+          </div>)</>:<></>
+         }
+         
         </div>
       </div>
       
