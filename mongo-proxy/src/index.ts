@@ -12,6 +12,7 @@ if (!MONGO_URI) {
 
 const app = express();
 
+dotenv.config()
 
 app.use(express.json());
 app.use("/api/v1/blogs", blogRouter);

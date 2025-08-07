@@ -4,6 +4,8 @@ import { TBlogSchema } from "../types";
 import Reaction from "../models/reaction.model";
 import Comment from "../models/comments.model";
 import Reply from '../models/replies.model'
+import { RedisManager } from "../utils/RedisManager";
+
 import mongoose from "mongoose";
 export async function createBlogs(req:Request,res:Response){
     const {title,body,userId,images}:TBlogSchema =req.body
@@ -25,8 +27,9 @@ export async function createBlogs(req:Request,res:Response){
             isPublished:true,
             createdAt:new Date()
         })
-
-        console.log(data)
+        const redisClient = new RedisManager().pushStreams("BLOG-CREATED",JSON.stringify(data))
+        
+        // redisClient.publish("BLOG_CREATED",JSON.stringify(data))
         res.json({status:200,message:`Blog publisdhed Successfully ${data}`})
 } catch (error) {
     res.json({error:error,message:"Errir occured while creating blogs",status:500})
