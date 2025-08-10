@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { createBlogInput, updateBlogInput } from "@100xdevs/medium-common";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
+import {Draft,Blog} from '../types/types'
 
 
 export const blogRouter = new Hono<{
@@ -105,6 +106,8 @@ blogRouter.post("/create", async (c) => {
     return c.json({ message: "Error creating blog" }, 500);
   }
 });
+
+
 
 // -------------------- UPDATE BLOG --------------------
 blogRouter.put("/", async (c) => {
@@ -422,3 +425,56 @@ blogRouter.post("/comments", async (c) => {
     }, 500);
   }
 });
+
+blogRouter.post("/saveDraft",async(c)=>{
+  try {
+    let draftData:Draft= await c.req.json()
+    console.log(draftData)
+    const prisma  =  getPrismaClient(c,true)
+    await prisma.$transaction(async (tx)=>{
+      // const isFound = await tx.user.findFirst(draftData.userId)
+      // if(!isFound){
+      //   console.error(`No user exist with the userid: ${draftData.userId}`)
+      // }
+      
+      let body = draftData.Blog
+      const slug = generateSlug(body.title);
+      const wordCount = countWords(body.body);
+      // IF User is aunthenticated  do this
+      const blog = await tx.blog.create({
+        data:{
+          title:draftData.Blog.title,
+          userId: draftData.Blog.userId,
+          slug: slug,
+          images: draftData.Blog.images,
+          body:draftData.Blog.body,
+          wordCount:wordCount   
+        }
+      })
+      console.log("yo",blog)
+      if(!blog){
+        console.error(`Something went wrong while saving the blog. try Again ${draftData.userId}`)
+      }
+      // If the drafts saves succefully
+      const isDraftCreated = await tx.draft.create({
+        data:{
+          blogId:blog.id,
+          userId: draftData.userId,
+        }
+      })
+        if(!isDraftCreated){
+        console.error(`Something went wrong while saving the draft. try Again ${draftData.userId}`)
+      }
+      console.log(isDraftCreated)
+    })
+    return c.json({
+      message:`Blog saved successfully`
+    },200)
+    
+  } catch (error) {
+    return c.json({
+      message:`Something went wrong while saving ${error}`
+    },500)
+  }
+
+})

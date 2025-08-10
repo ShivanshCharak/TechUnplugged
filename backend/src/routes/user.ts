@@ -14,7 +14,7 @@ import {
   JWTPayload,
   RefreshTokenPayload,
   UserResponse
-} from '../types/userTypes';
+} from '../types/types';
 import { blogRouter } from "./blog";
 
 export const userRouter = new Hono<{
