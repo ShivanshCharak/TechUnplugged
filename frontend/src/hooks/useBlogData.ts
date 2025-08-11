@@ -352,7 +352,7 @@ const handleReply = async (parentId: string, text: string) => {
 
   try {
     const response = await fetch("http://localhost:8787/api/v1/blog/comments", {
-      method: 'POST', // This was missing
+      method: 'POST', 
       credentials: 'include',
       headers: {
         "Content-Type": "application/json",

@@ -1,9 +1,13 @@
 // Updated blogRouter with environment bindings and better client management for Cloudflare Workers + Hono
-import { Groq } from "groq-sdk/index.mjs";
+
 import { Hono } from "hono";
 import { createBlogInput, updateBlogInput } from "@100xdevs/medium-common";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
+
+import {Draft,Blog} from '../types/types'
+import { getRedisClient } from "..";
+
 
 
 export const blogRouter = new Hono<{
@@ -12,13 +16,15 @@ export const blogRouter = new Hono<{
     DATABASE_URL_REPLICA_1: string;
     JWT_SECRET: string;
     GROQ_API_KEY: string;
+    UPSTASH_REDIS_REST_TOKEN:string
+    Blog_cache:KVNamespace
   };
   Variables: {
     userId: string;
   };
 }>();
 
-function getPrismaClient(c: any, useReplica: boolean = false) {
+export function getPrismaClient(c: any, useReplica: boolean = false) {
   return new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
     // useReplica ? c.env.DATABASE_URL_REPLICA_1 : 
@@ -26,7 +32,7 @@ function getPrismaClient(c: any, useReplica: boolean = false) {
 }
 
 
-function generateSlug(title: string): string {
+export function generateSlug(title: string): string {
   return title
     .toLowerCase()
     .replace(/[^\w\s-]/g, '') 
@@ -36,7 +42,7 @@ function generateSlug(title: string): string {
 }
 
 
-function countWords(content: any): number {
+export function countWords(content: any): number {
   if (typeof content === 'string') {
     return content.trim().split(/\s+/).filter(word => word.length > 0).length;
   }
@@ -48,38 +54,17 @@ function countWords(content: any): number {
   return 0;
 }
 
-// -------------------- CHATBOT --------------------
-blogRouter.post("/chatbot", async (c) => {
-  const body = await c.req.json();
-  const userMessage = body.message;
-  
-  if (!userMessage) return c.json({ error: "Message is required" }, 400);
-
-  try {
-    const groq = new Groq({ apiKey: c.env.GROQ_API_KEY });
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: userMessage }],
-      model: "llama3-70b-8192",
-    });
-
-    return c.json({
-      response: chatCompletion.choices[0]?.message?.content || "No response",
-    });
-  } catch (error) {
-    console.error("Error in chatbot endpoint:", error);
-    return c.json({ error: "Internal server error" }, 500);
-  }
-});
 
 // -------------------- CREATE BLOG --------------------
 blogRouter.post("/create", async (c) => {
+  const redis = getRedisClient(c)
   console.log("Creating blog");
   const body = await c.req.json();
   console.log(body)
   // const { success } = createBlogInput.safeParse
   
   // if (!success) return c.json({ message: "Inputs not correct" }, 411);
-
+  
   const prisma = getPrismaClient(c);
   
   try {
@@ -98,7 +83,10 @@ blogRouter.post("/create", async (c) => {
         isPublished: body.isPublished || false,
       },
     });
-
+    if(blog){
+      await redis.set("yo","saved")
+    }
+    
     return c.json({ id: blog.id, slug: blog.slug });
   } catch (error) {
     console.error("Error creating blog:", error);
@@ -106,13 +94,15 @@ blogRouter.post("/create", async (c) => {
   }
 });
 
+
+
 // -------------------- UPDATE BLOG --------------------
 blogRouter.put("/", async (c) => {
   const body = await c.req.json();
   const { success } = updateBlogInput.safeParse(body);
   
   if (!success) return c.json({ message: "Inputs not correct" }, 411);
-
+  
   const prisma = getPrismaClient(c);
   
   try {
@@ -120,32 +110,32 @@ blogRouter.put("/", async (c) => {
       title: body.title,
       body: body.content,
     };
-
+    
     
     if (body.title) {
       updateData.slug = generateSlug(body.title);
     }
-
+    
     
     if (body.content) {
       updateData.wordCount = countWords(body.content);
     }
-
+    
     
     if (body.excerpt) {
       updateData.excerpt = body.excerpt;
     }
-
+    
     
     if (typeof body.isPublished === 'boolean') {
       updateData.isPublished = body.isPublished;
     }
-
+    
     const blog = await prisma.blog.update({
       where: { id: body.id },
       data: updateData,
     });
-
+    
     return c.json({ id: blog.id, slug: blog.slug });
   } catch (error) {
     console.error("Error updating blog:", error);
@@ -157,6 +147,7 @@ blogRouter.put("/", async (c) => {
 blogRouter.get("/bulk", async (c) => {
   const prisma = getPrismaClient(c, true);
   
+
   try {
     const blogs = await prisma.blog.findMany({
       where: {
@@ -216,7 +207,7 @@ blogRouter.get("/bulk", async (c) => {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        views: 'desc',
       },
     });
 
@@ -243,7 +234,19 @@ blogRouter.get("/bulk", async (c) => {
 blogRouter.get("/:id", async (c) => {
   const id = c.req.param("id");
   const prisma = getPrismaClient(c, true);
+  const blog = await c.env.Blog_cache.get(`blog:${id}`)
+  let viewsStr  = await c.env.Blog_cache.get(`views:${id}`)
+  let views = viewsStr ? parseInt(viewsStr, 10) : 0;
+  if(viewsStr){
+  views += 1;
+  }
+  await c.env.Blog_cache.put(`views:${id}`,JSON.stringify(views))
 
+  if(blog){
+
+    return c.json({message:`Cache hit`,blog:JSON.parse(blog)},200)
+  }
+  
   try {
     
     await prisma.blog.update({
@@ -254,7 +257,7 @@ blogRouter.get("/:id", async (c) => {
         },
       },
     });
-
+    
     const blog = await prisma.blog.findUnique({
       where: { 
         id: id,
@@ -340,7 +343,7 @@ blogRouter.get("/:id", async (c) => {
     if (!blog) {
       return c.json({ message: "Blog not found" }, 404);
     }
-
+    
     
     const formattedBlog = {
       ...blog,
@@ -352,7 +355,7 @@ blogRouter.get("/:id", async (c) => {
       },
       user: undefined, 
     };
-
+    await c.env.Blog_cache.put(`blog:${id}`, JSON.stringify(formattedBlog))
     return c.json({ blog: formattedBlog });
   } catch (error) {
     console.error("Error fetching blog:", error);
@@ -422,3 +425,4 @@ blogRouter.post("/comments", async (c) => {
     }, 500);
   }
 });
+

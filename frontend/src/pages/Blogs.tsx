@@ -13,7 +13,7 @@ import { getReadingTime,formatDate } from "../utils/BlogsUtility";
 
 
 
-// ==================== MAIN COMPONENT ====================
+// ==================== MAIN 
 export const Blogs = () => {
   const [filters, setFilters] = useState<BlogsFilters>({
     sortBy: 'newest',
@@ -52,7 +52,7 @@ export const Blogs = () => {
     return (
       <div>
         <Appbar />
-        <div className="max-w-6xl mx-auto px-4 py-8 absolute top-[20%`]">
+        <div className="max-w-6xl mx-auto px-4 py-8 absolute mt-[10%]">
           <div className="flex justify-center mb-8">
             <div className="w-full max-w-2xl">
               <div className="h-8 bg-gray-200 rounded mb-4 animate-pulse"></div>
@@ -68,13 +68,12 @@ export const Blogs = () => {
       </div>
     );
   }
-
   // Error state
   if (error) {
     return (
       <div>
         <Appbar />
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-8 mt-[10rem]">
           <div className="text-center">
             <div className="text-red-500 text-xl font-bold mb-4">Error Loading Blogs</div>
             <p className="text-gray-600 mb-4">{error}</p>
@@ -93,7 +92,7 @@ export const Blogs = () => {
   return (
     <div>
       <Appbar />
-      <div className="max-w-6xl mx-auto px-4 py-8 mt-[10%]">
+      <div className="max-w-6xl mx-auto px-4 py-8  mt-[10rem]">
         {/* Header */}
         <div className="text-center mb-8">
           <BlogHeader />

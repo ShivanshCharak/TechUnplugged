@@ -74,7 +74,7 @@ export default function Home() {
       <div className="max-w-[778px] h-[600px] bg-gradient-to-t from-[#000000] to-[#0E0D0D] rotate-[-160deg] absolute top-[-200px] z-0"></div>
 
       {/* Main container */}
-      <div className="relative min-h-screen overflow-hidden">
+      <div className="relative min-h-screen overflow-hidden mt-[10rem]">
         <div className="flex justify-between items-center mt-[7%] flex-col">
           <div className="flex gap-10">
             <div className="w-[153px] h-[25px] bg-[#bef5c1] rounded-xl text-center flex items-end justify-center">

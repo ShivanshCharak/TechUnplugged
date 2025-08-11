@@ -14,15 +14,17 @@ import {
   JWTPayload,
   RefreshTokenPayload,
   UserResponse
-} from '../types/userTypes';
+} from '../types/types';
 import { blogRouter } from "./blog";
+import { Context } from "hono/jsx";
 
 export const userRouter = new Hono<{
   Bindings: UserBindings;
   Variables: UserVariables;
 }>();
 
-function getPrismaClient(c: any) {
+function getPrismaClient(c: Context) {
+  console.log(c)
   return new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate());
@@ -30,20 +32,19 @@ function getPrismaClient(c: any) {
 
 /**
  * USER SIGNUP
- */
+*/
 userRouter.post('/signup', async (c) => {
   const body: SignupInput = await c.req.json();
   const { firstname, lastname, email, password } = body;
-
   if (!firstname || !lastname || !email || !password) {
     return c.json({ 
       message: "All fields are required",
       error: "MISSING_FIELDS" 
     }, 400);
   }
-
+  
   const prisma = getPrismaClient(c);
-
+  
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -52,9 +53,9 @@ userRouter.post('/signup', async (c) => {
         error: "USER_EXISTS" 
       }, 409);
     }
-
+    
     const hashedPassword = await bcrypt.hash(password, 10);
-
+    
     const user = await prisma.user.create({
       data: {
         firstname,
@@ -64,26 +65,26 @@ userRouter.post('/signup', async (c) => {
         isPremium: false,
       }
     });
-
+    
     const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60);
     const refreshTokenExpiry = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000));
-
+    
     const accessTokenPayload: JWTPayload = {
       id: user.id,
       isPremium: user.isPremium,
       exp: accessTokenExpiry
     };
-
+    
     const accessToken = await sign(accessTokenPayload, c.env.ACCESS_TOKEN_SECRET);
-
+    
     const refreshTokenPayload: RefreshTokenPayload = {
       jti: crypto.randomUUID(),
       userId: user.id,
       exp: Math.floor(refreshTokenExpiry.getTime() / 1000)
     };
-
+    
     const refreshToken = await sign(refreshTokenPayload, c.env.REFRESH_TOKEN_SECRET);
-
+    
     await prisma.refreshToken.create({
       data: {
         token: refreshToken,
@@ -93,34 +94,34 @@ userRouter.post('/signup', async (c) => {
         ipAddress: c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'Unknown'
       }
     });
-
+    
     setCookie(c, 'accessToken', accessToken, {
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 15 * 60,
       path: '/'
     });
-
+    
     setCookie(c, 'refreshToken', refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60,
       path: '/auth/refresh'
     });
-
+    
     const userResponse: UserResponse = {
       id: user.id,
       name: `${user.firstname} ${user.lastname}`,
       email: user.email,
       isPremium: user.isPremium
     };
-
+    
     return c.json({
       message: `Welcome ${user.firstname} ${user.lastname}`,
       user: userResponse,
       accessToken
     }, 200);
-
+    
   } catch (e) {
     console.error('Signup error:', e);
     return c.json({ 
@@ -139,45 +140,45 @@ userRouter.post('/refresh', async (c) => {
       error: "MISSING_REFRESH_TOKEN" 
     }, 401);
   }
-
+  
   const prisma = getPrismaClient(c);
-
+  
   try {
     const payload = await verify(refreshToken, c.env.REFRESH_TOKEN_SECRET) as RefreshTokenPayload;
-
+    
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
       include: { user: true }
     });
-
+    
     if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
       return c.json({ 
         message: "Invalid refresh token",
         error: "INVALID_REFRESH_TOKEN" 
       }, 401);
     }
-
+    
     const accessTokenExpiry = Math.floor(Date.now() / 1000) + (15 * 60);
     const newAccessTokenPayload: JWTPayload = {
       id: storedToken.user.id,
       isPremium: storedToken.user.isPremium,
       exp: accessTokenExpiry
     };
-
+    
     const newAccessToken = await sign(newAccessTokenPayload, c.env.ACCESS_TOKEN_SECRET);
-
+    
     setCookie(c, 'accessToken', newAccessToken, {
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 15 * 60,
       path: '/'
     });
-
+    
     return c.json({
       message: "Token refreshed successfully",
       accessToken: newAccessToken
     });
-
+    
   } catch (e) {
     console.error('Token refresh error:', e);
     return c.json({ 
@@ -189,7 +190,7 @@ userRouter.post('/refresh', async (c) => {
 
 userRouter.post('/logout', async (c) => {
   const refreshToken = getCookie(c, 'refreshToken');
-
+  
   if (refreshToken) {
     const prisma = getPrismaClient(c);
     try {
@@ -201,32 +202,32 @@ userRouter.post('/logout', async (c) => {
       console.error('Logout error:', e);
     }
   }
-
+  
   setCookie(c, 'accessToken', '', {
     httpOnly: true,
     sameSite: 'lax',
     maxAge: 0,
     path: '/'
   });
-
+  
   setCookie(c, 'refreshToken', '', {
     httpOnly: true,
     sameSite: 'strict',
     maxAge: 0,
     path: '/auth/refresh'
   });
-
+  
   return c.json({ message: "Logged out successfully" }, 200);
 });
 
 /**
  * USER LOGIN
- */
+*/
 userRouter.post('/signin', async (c) => {
   const body: SigninInput = await c.req.json();
-  console.log(body)
+  console.log(body,c.env.DATABASE_URL)
   const { email, password } = body;
-
+  
   if (!email || !password) {
     return c.json({ 
       message: "Email and password are required",
