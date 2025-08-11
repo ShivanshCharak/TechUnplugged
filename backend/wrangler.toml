@@ -29,3 +29,7 @@ upload.exclude = [
   "vitest.config.ts",
   "vite.config.ts"
 ]
+## kv_namespaces
+[[kv_namespaces]]
+binding = "Blog_cache"
+id = "7b7a2eb1fcaa43d19881d8dec6c97ab7"
