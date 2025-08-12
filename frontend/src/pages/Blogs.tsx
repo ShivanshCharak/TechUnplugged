@@ -18,21 +18,25 @@ import { Smile, Heart, HandshakeIcon, Eye } from "lucide-react";
 import { SearchFilters } from "../components/SearchFilters";
 import { getReadingTime, formatDate } from "../utils/BlogsUtility";
 
+
 /**
  *  MAIN BLOG
  *
  */
-export const Blogs = () => {
+export const Blogs = (category:"Personalized"|"Recent"|"Featured"="Personalized") => {
   const [filters, setFilters] = useState<BlogsFilters>({
     sortBy: "newest",
     limit: 10,
     offset: 0,
   });
+  const [activeHeader, setActiveHeader] = useState<"Personalized"|"Recent"|"Featured">("Personalized");
 
-  const { loading, blogs, error } = useBlogs(filters);
+  const { loading, blogs, error } = useBlogs(filters,activeHeader);
+  console.log("blogs",blogs,category)
   console.log("blogs", blogs);
   console.log("ractions", blogs[0]);
-
+  
+  
   const stats = {
     totalBlogs: blogs.length,
     totalAuthors: new Set(blogs.map((blog) => blog.user.id)).size,
@@ -62,56 +66,58 @@ export const Blogs = () => {
   };
 
   // Loading state
-  if (loading) {
-    return (
-      <div>
-        <Appbar />
-        <div className="max-w-6xl mx-auto px-4 py-8 absolute mt-[10%]">
-          <div className="flex justify-center mb-8">
-            <div className="w-full max-w-2xl">
-              <div className="h-8 bg-gray-200 rounded mb-4 animate-pulse"></div>
-              <div className="h-12 bg-gray-200 rounded mb-4 animate-pulse"></div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <BlogSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  // Error state
-  if (error) {
-    return (
-      <div>
-        <Appbar />
-        <div className="max-w-6xl mx-auto px-4 py-8 mt-[10rem]">
-          <div className="text-center">
-            <div className="text-red-500 text-xl font-bold mb-4">
-              Error Loading Blogs
-            </div>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div>
+  //       <Appbar />
+  //       <div className="max-w-6xl mx-auto px-4 py-8 absolute mt-[10%]">
+  //         <div className="flex justify-center mb-8">
+  //           <div className="w-full max-w-2xl">
+  //             <div className="h-8 bg-gray-200 rounded mb-4 animate-pulse"></div>
+  //             <div className="h-12 bg-gray-200 rounded mb-4 animate-pulse"></div>
+  //           </div>
+  //         </div>
+  //         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  //           {[...Array(6)].map((_, i) => (
+  //             <BlogSkeleton key={i} />
+  //           ))}
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+  // // Error state
+  // if (error) {
+  //   return (
+  //     <div>
+  //       <Appbar />
+  //       <div className="max-w-6xl mx-auto px-4 py-8 mt-[10rem]">
+  //         <div className="text-center">
+  //           <div className="text-red-500 text-xl font-bold mb-4">
+  //             Error Loading Blogs
+  //           </div>
+  //           <p className="text-gray-600 mb-4">{error}</p>
+  //           <button
+  //             onClick={() => window.location.reload()}
+  //             className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+  //           >
+  //             Try Again
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div>
+      
       <Appbar />
       <div className="max-w-6xl mx-auto px-4 py-8  mt-[10rem]">
         {/* Header */}
         <div className="text-center mb-8">
-          <BlogHeader />
+          <BlogHeader activeHeader={activeHeader} setActiveHeader={setActiveHeader} />
+
         </div>
 
         {/* Stats */}
@@ -225,6 +231,7 @@ export const Blogs = () => {
           </div>
         </div>
       </div>
+      {/* {console.log(render)} */}
     </div>
   );
 };

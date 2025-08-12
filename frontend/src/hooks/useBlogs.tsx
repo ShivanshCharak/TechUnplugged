@@ -3,11 +3,12 @@ import { BlogsFilters,Blog,UseBlogsReturn } from "../types";
 import { calculateWordCount, createExcerpt, createSlug } from "../utils/BlogsUtility";
 
 
-export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
+export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"|"Featured"): UseBlogsReturn => {
+  console.log("render")
   const [loading, setLoading] = useState(true);
   const [blogs, setBlogs] = useState<Blog[]>([]);
+  
   const [error, setError] = useState<string>();
-
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
@@ -22,8 +23,8 @@ export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
         if (filters.sortBy) queryParams.append('sortBy', filters.sortBy);
         if (filters.limit) queryParams.append('limit', filters.limit.toString());
         if (filters.offset) queryParams.append('offset', filters.offset.toString());
-
-        const url = `http://localhost:8787/api/v1/blog/bulk`;
+        const url = type==="Personalized"?`http://localhost:8787/api/v1/blog/bulk`:"http://localhost:8787/api/v1/blog/recent";
+        console.log(type,url)
         console.log('Fetching from URL:', url);
 
         // Get token from localStorage
@@ -150,9 +151,8 @@ export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
         setLoading(false);
       }
     };
-
     fetchBlogs();
-  }, [filters.search, filters.tags, filters.author, filters.sortBy, filters.limit, filters.offset]);
+  }, [type,filters.search, filters.tags, filters.author, filters.sortBy, filters.limit, filters.offset]);
 
   return { loading, blogs, error };
 };

@@ -124,7 +124,68 @@ blogRouter.post("/create", async (c) => {
     return c.json({ message: "Error creating blog" }, 500);
   }
 });
+
+
+async function searchBlogs(c:Context,query: string, limit = 10, offset = 0) {
+  console.log
+  const searchQuery = query.trim().split(/\s+/).join(' & ');
+  const prisma  = getPrismaClient(c,true)
+
+  return await prisma.$queryRaw`
+    SELECT id,
+       title,
+       views,
+       ts_rank_cd(ts, to_tsquery('english', 'AWS')) AS rank
+        FROM "Blog"
+        WHERE ts @@ to_tsquery('english', 'AWS')
+          AND "isPublished" = true
+          AND "isDeleted" = false
+        ORDER BY rank DESC, views DESC
+        LIMIT 10 OFFSET 0;
+  `;
+}
+
+blogRouter.get("/search", async (c)=>{
+  console.log("search")
+  const prisma  = getPrismaClient(c,true)
+  const  query  = c.req.query('q');
+
+  const page = parseInt(c.req.query('page') || '1');
+  const limit = parseInt(c.req.query('limit') || '10');
+  
+  if (!query || query.trim().length === 0) {
+    return Response.json({ blogs: [], total: 0 });
+  }
+  
+  try {
+    const offset = (page - 1) * limit;
+    const blogs = await searchBlogs(c,query, limit, offset);
+    
+    // Get total count for pagination
+    const totalResult = await prisma.$queryRaw`
+      SELECT COUNT(*) as count
+      FROM "Blog" b
+      WHERE 
+        b."searchVector" @@ to_tsquery('english', ${query.trim().split(/\s+/).join(' & ')})
+        AND b."isPublished" = true
+        AND b."isDeleted" = false
+    `;
+    
+    const total = Number((totalResult as any)[0]?.count || 0);
+    
+    return Response.json({
+      blogs,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    return Response.json({ error: 'Search failed' }, { status: 500 });
+  }
+})
 // Add this route to your blogRouter file
+
 
 blogRouter.get("/trigger-schedule", async (c:Context) => {
   try {

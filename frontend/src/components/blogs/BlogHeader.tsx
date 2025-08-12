@@ -2,13 +2,19 @@ import crown from "../../assets/crown.svg";
 import person from "../../assets/person.svg";
 import wand from "../../assets/wand.svg";
 import { useState } from "react";
-export default function BlogHeader() {
-  const [activeHeader, setActiveHeader] = useState<String>("Personalized");
-  function getRecent(){
-    
-  }
+import { useBlogs } from "../../hooks/useBlogs";
+import { Blogs } from "../../pages/Blogs";
+type BlogHeaderProps = {
+  activeHeader: "Personalized" | "Recent" | "Featured";
+  setActiveHeader: (category: "Personalized" | "Recent" | "Featured") => void;
+};
+export default function BlogHeader({activeHeader,setActiveHeader}:BlogHeaderProps) {
+  
+  // Blogs(activeHeader)
   return (
     <div className="flex w-[400px] justify-between">
+      
+
       <span
         className={`${
           activeHeader === "Personalized" ? "bg-zinc-900" : ""
@@ -33,10 +39,7 @@ export default function BlogHeader() {
           activeHeader === "Recent" ? "bg-zinc-900" : ""
         } font-semibold flex items-center duration-500 justify-between cursor-pointer p-3 rounded-lg`}
         onClick={() => {
-        fetch("http://localhost:8787/api/v1/blog/recent").then(async (res)=>{
-            let response = await res.json()
-            console.log(response)
-        })
+        
           setActiveHeader("Recent");
         }}
       >

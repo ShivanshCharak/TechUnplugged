@@ -6,10 +6,10 @@ export const BlogStats: React.FC<BlogStatsProps> = ({
   totalViews, 
   totalLikes 
 }) => {
-  {console.log("totalLikes",totalLikes)}
   return (
     <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
       <div className="bg-[#0B0B0B] p-4 rounded-lg shadow-sm border  border-[#1A1717] text-center">
+     
         <div className="text-2xl font-bold text-blue-600">{totalBlogs}</div>
         <div className="text-sm text-white-600">Total Blogs</div>
       </div>
