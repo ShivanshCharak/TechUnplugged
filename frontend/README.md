@@ -1,30 +1,31 @@
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## Trending Feed Object
+    {
+      "id": "string",                  // UUID string, unique blog identifier
+      "title": "string",               // Blog title
+      "slug": "string",                // URL-friendly blog identifier
+      "excerpt": "string|null",        // Short summary or null
+      "images": "string",              // URL string for blog image
+      "body": "string",                // HTML content string
+      "createdAt": "string",           // ISO date string
+      "isDeleted": "boolean",          // Soft delete flag
+      "isPublished": "boolean",        // Published status flag
+      "wordCount": "number",           // Number of words in blog (0 in example)
+      "views": "number",               // Number of views
+      "userId": "string",              // UUID string for author userId
+      "user": {                       // Author details object
+        "id": "string",               // User ID string (UUID)
+        "firstname": "string",        // First name
+        "lastname": "string",         // Last name
+        "email"?: "string",           // (optional) Email if available
+        "createdAt"?: "string"        // (optional) ISO date string
+      },
+      "reactions": {                  // Reaction counts object
+        "likes": "number",
+        "applause": "number",
+        "laugh": "number"
+      } | null,
+      "_count": {                    // Related entity counts
+        "comments": "number",
+        "bookmarks": "number"
+      }
+    }

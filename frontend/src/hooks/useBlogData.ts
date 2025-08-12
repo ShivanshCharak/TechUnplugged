@@ -11,7 +11,7 @@ export const useBlogData = (blog: Blog) => {
   const { setAuthData, authData } = useContext(AuthContext);
   const { reactions, setReactions, drafts, setDrafts, newComment, setNewComment, isBookmarked, setIsBookmarked } = useContext(InteractionContext);
 
-  const [bookmarkCount, setBookmarkCount] = useState(blog._count.bookmarks);
+  const [bookmarkCount, setBookmarkCount] = useState(blog._count?.bookmarks??0);
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const [blogDB, setBlogDB] = useState<Record<string, IBlogReactions>>({});
   const [dataLoaded, setDataLoaded] = useState(false);

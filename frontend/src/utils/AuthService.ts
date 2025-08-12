@@ -8,7 +8,7 @@ export class AuthService{
             
             if(!token) return null
             const decoded = jwtDecode<IUserTokenPayload>(token)
-            console.log(decoded)
+            console.log("decoded",decoded)
             if(decoded.exp&&decoded.exp<Date.now()/1000){
                 localStorage.removeItem(this.ACCESS_TOKEN_KEY)
                 // fetch("localhost://8787/api/v1/user/logout"
