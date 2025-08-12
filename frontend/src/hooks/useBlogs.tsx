@@ -3,11 +3,12 @@ import { BlogsFilters,Blog,UseBlogsReturn } from "../types";
 import { calculateWordCount, createExcerpt, createSlug } from "../utils/BlogsUtility";
 
 
-export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
+export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"|"Featured"): UseBlogsReturn => {
+  console.log("render")
   const [loading, setLoading] = useState(true);
   const [blogs, setBlogs] = useState<Blog[]>([]);
+  
   const [error, setError] = useState<string>();
-
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
@@ -22,8 +23,8 @@ export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
         if (filters.sortBy) queryParams.append('sortBy', filters.sortBy);
         if (filters.limit) queryParams.append('limit', filters.limit.toString());
         if (filters.offset) queryParams.append('offset', filters.offset.toString());
-
-        const url = `http://localhost:8787/api/v1/blog/bulk`;
+        const url = type==="Personalized"?`http://localhost:8787/api/v1/blog/bulk`:"http://localhost:8787/api/v1/blog/recent";
+        console.log(type,url)
         console.log('Fetching from URL:', url);
 
         // Get token from localStorage
@@ -98,26 +99,26 @@ export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
           console.warn('Unexpected data format:', data);
           blogsArray = [];
         }
-        
+        console.log('blogarray',blogsArray[0])
 
         const transformedBlogs: Blog[] = blogsArray.map((blog: any) => {
           try {
             return {
               id: String(blog.id || blog._id || Math.random().toString(36).substr(2, 9)),
               title: blog.title || "Untitled",
-              content: blog.content || blog.body || "",
-              body: blog.body || blog.content || "",
+              content: blog.body || "",
+              body: blog.body || "",
               images: blog.images || blog.url || "",
-              url: blog.url || blog.images || "",
+              url:  blog.images || "",
               slug: blog.slug || createSlug(blog.title || "", String(blog.id || "")),
-              excerpt: blog.excerpt || createExcerpt(blog.content || blog.body || ""),
-              publishedDate: blog.publishedDate || blog.createdAt || new Date().toISOString(),
+              excerpt: blog.excerpt || createExcerpt(blog.body || ""),
+              publishedDate: blog.createdAt || new Date().toISOString(),
               createdAt: blog.createdAt || new Date().toISOString(),
               updatedAt: blog.updatedAt || new Date().toISOString(),
-              author: {
+              user: {
                 id: String(blog.author?.id || blog.authorId || blog.userId || "unknown"),
-                name: blog.author?.name || blog.authorName || "Anonymous",
-                email: blog.author?.email || blog.authorEmail
+                email: blog.user?.email,
+                name: blog.user?.firstname +" " +blog.user?.lastname
               },
               isPublished: blog.isPublished ?? true,
               tags: Array.isArray(blog.tags) ? blog.tags : [],
@@ -125,12 +126,11 @@ export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
               likes: Number(blog.likes) || 0,
               isDeleted: blog.isDeleted || false,
               wordCount: blog.wordCount || calculateWordCount(blog.content || blog.body || ""),
-              userId: String(blog.userId || blog.author?.id || "unknown"),
-              user: blog.user || blog.author,
-              comments: Array.isArray(blog.comments) ? blog.comments : [],
-              reactions: Array.isArray(blog.reactions) ? blog.reactions : [],
+              userId: String(blog.userId || "unknown"),
+    
+              reactions: blog.reactions?blog.reactions:{likes:0,applause:0,smile:0} ,
               _count: blog._count || {
-                comments: Array.isArray(blog.comments) ? blog.comments.length : 0,
+                
                 reactions: Array.isArray(blog.reactions) ? blog.reactions.length : 0
               }
             };
@@ -139,6 +139,7 @@ export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
             return null;
           }
         }).filter(Boolean) as Blog[];
+        // ransformedBlogs)
         
         console.log('Transformed blogs:', transformedBlogs);
         setBlogs(transformedBlogs);
@@ -150,9 +151,8 @@ export const useBlogs = (filters: BlogsFilters = {}): UseBlogsReturn => {
         setLoading(false);
       }
     };
-
     fetchBlogs();
-  }, [filters.search, filters.tags, filters.author, filters.sortBy, filters.limit, filters.offset]);
+  }, [type,filters.search, filters.tags, filters.author, filters.sortBy, filters.limit, filters.offset]);
 
   return { loading, blogs, error };
 };

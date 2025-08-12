@@ -7,6 +7,9 @@ interface BlogCardProps {
     publishedDate: string;
     id: string;
     url: string;
+    likes:number,
+    applauses:number,
+    smiles:number
 }
 
 export const BlogCard = ({
@@ -15,14 +18,18 @@ export const BlogCard = ({
     title,
     content,
     url,
+    likes,
+    applauses,
+    smiles,
     publishedDate
+
 }: BlogCardProps) => {
     return (
         <>
         
         <div className="flex flox-col">
             <Link to={`/blog/${id}`} className="block">
-                <div className="w-full max-w-3xl bg-inherit border border-[#2a2a2a] hover:border-[#444] rounded-2xl p-5 mb-6 transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="w-[790px] bg-inherit border border-[#2a2a2a] hover:border-[#444] rounded-2xl p-5 mb-6 transition-all duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     {/* Left: Blog Content */}
                     <div className="flex-1">
                         <div className="flex items-center text-sm text-gray-400 space-x-2 mb-2">
@@ -44,7 +51,7 @@ export const BlogCard = ({
                         <div className="flex items-center text-xs text-gray-500 mt-3 space-x-4">
                             <span>{`${Math.ceil(content.length / 100)} min read`}</span>
                             <span>•</span>
-                            <span>{Math.ceil(Math.random() * 100)} likes</span>
+                            <span>{likes} likes</span>
                         </div>
                     </div>
 

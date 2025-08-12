@@ -1,4 +1,5 @@
 name = "week-13-offline"
+main = "src/index.ts"
 compatibility_date = "2023-12-01"
 
 [vars]
@@ -6,29 +7,11 @@ DATABASE_URL="prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsI
 GROQ_API_KEY="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"
 ACCESS_TOKEN_SECRET = "NKJNEKJFNEFJ"
 REFRESH_TOKEN_SECRET="FNEKJNEhjeFE"
-# [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# [[r2_buckets]]
-# binding = "MY_BUCKET"
-# bucket_name = "my-bucket"
-
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "my-database"
-# database_id = ""
 compatibility_flags = ["nodejs_compat"]
-[build]
-upload.exclude = [
-  "**/*.test.ts",
-  "**/__tests__/**",
-  "**/__mock__/**",         # ← this is what you need!
-  "**/__mocks__/**",
-  "**/test-utils/**",
-  "vitest.config.ts",
-  "vite.config.ts"
-]
+
+triggers = { crons = ["* * * * *"] }
+
 ## kv_namespaces
 [[kv_namespaces]]
 binding = "Blog_cache"

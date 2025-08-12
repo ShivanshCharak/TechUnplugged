@@ -72,13 +72,14 @@ model Blog {
   wordCount    Int
   views        Int        @default(0)
   userId       String
-
+   searchVector Unsupported("tsvector")?
   user         User       @relation(fields: [userId], references: [id])
   comments     Comment[]
   reactions    Reaction?
   tags         BlogTag[]
   bookmarks    Bookmark[]
   drafts       Draft[]
+  @@index([searchVector], type: Gin)
 }
 
 model Comment {
@@ -161,6 +162,7 @@ model BlogTag {
 
   @@id([blogId, tagId])
 }
+
 
 model UserMaterializedView {
   username     String
