@@ -16,7 +16,7 @@ interface Bindings {
   GROQ_API_KEY: string;
   UPSTASH_REDIS_REST_TOKEN: string;
   Blog_cache: KVNamespace;
-  Blog_queue:DurableObjectNamespace;
+  Blog_queue: DurableObjectNamespace;
   Blog_DD: DurableObjectNamespace;
 }
 interface Variables {
@@ -81,43 +81,29 @@ blogRouter.post("/create", async (c) => {
         wordCount: wordCount,
         isPublished: body.isPublished || false,
       },
-    });
 
-    let user = await prisma.user.findFirst({
-      where: {
-        id: blog.userId,
-      },
-      select: {
-        id: true,
-        firstname: true,
-        lastname: true,
-        email: true,
-        userInfo: {
-          select: {
-            avatar: true,
-            intro: true,
-            tech: true,
-          },
-        },
+      include: {
+        user: { select: { firstname: true, lastname: true, email: true } },
       },
     });
-    let blogData = {
-      ...blog,
-      ...user,
-    };
 
+    console.log("blog", blog);
 
-    await c.env.Blog_cache.put(`blog:${blog.id}`, JSON.stringify(blogData));
-    console.log("latest",await c.env.Blog_cache.get(`blog:${blog.id}`))
+    await c.env.Blog_cache.put(`blog:${blog.id}`, JSON.stringify(blog));
+    console.log("latest", await c.env.Blog_cache.get(`blog:${blog.id}`));
 
     let rawIds = (await c.env.Blog_cache.get("recent")) ?? JSON.stringify([]);
 
-    let blogIds: string[] = rawIds? JSON.parse(rawIds):[]
-    blogIds.push(blog.id)
-
+    let blogIds: string[] = rawIds ? JSON.parse(rawIds) : [];
+    blogIds.push(blog.id);
+    console.log("blogIds", blog.id);
     await c.env.Blog_cache.put("recent", JSON.stringify(blogIds));
 
-    console.log("Updated recent blog IDs:", blogIds,await c.env.Blog_cache.get('recent'));
+    console.log(
+      "Updated recent blog IDs:",
+      blogIds,
+      await c.env.Blog_cache.get("recent")
+    );
 
     return c.json({ id: blog.id, slug: blog.slug });
   } catch (error) {
@@ -188,6 +174,18 @@ blogRouter.get("/search", async (c) => {
   }
 });
 
+blogRouter.post("/sync", async (c: Context) => {
+  
+  try {
+    let data = await c.req.json();
+    console.log(data);
+    let res  = updateBlogDD(c, data);
+    return c.json({message:"Database Synced",res},200)
+  } catch (error) {
+    return c.json({message:"Something went wrong"},500)
+  }
+});
+
 blogRouter.get("/trigger-schedule", async (c: Context) => {
   try {
     await onScheduled(c);
@@ -203,24 +201,25 @@ blogRouter.get("/trigger-schedule", async (c: Context) => {
   }
 });
 
-
 blogRouter.get("/recent", async (c) => {
-  
   try {
     const recentBlogs = await c.env.Blog_cache.get("recent");
     if (recentBlogs) {
       let blogs: Array<string> = await JSON.parse(recentBlogs);
-      console.log("recentBlogs",blogs)
+      console.log("recentBlogs", blogs);
       blogs = blogs.map((val) => c.env.Blog_cache.get(`blog:${val}`));
 
       blogs = await Promise.all(blogs);
-      console.log(blogs)
+      console.log(blogs);
       blogs = blogs.map((val) => (val ? JSON.parse(val) : ""));
       return c.json({ message: "Recent blogs", blogs }, 200);
     }
-    return c.json({message:"No recent blog was found"},208)
+    return c.json({ message: "No recent blog was found" }, 208);
   } catch (error) {
-    return c.json({message:"Something went wrong while getting recent"},500)
+    return c.json(
+      { message: "Something went wrong while getting recent" },
+      500
+    );
   }
 });
 
@@ -423,11 +422,25 @@ blogRouter.post("/comment", async (c) => {
 let batch: { blogId: string; like: number; applause: number; smile: number }[] =
   [];
 
+async function updateBlogDD(c: Context,data: Record<string,{reactions: [];bookmarks: [];drafts: [];comments: [];}>) {
+  const keys = Object.keys(data.data)
+  const id = c.env.Blog_DD.idFromName(keys[0]);
+  const stub = c.env.Blog_DD.get(id);
+  let r = data.data.reactions
+  // console.log("r",data.data[keys[0]].reactions)
+  const response = await stub.fetch("https://do/reaction", {
+    method: "POST",
+    body: JSON.stringify(data.data[keys[0]].reactions),
+    headers: { "Content-Type": "application/json" },
+  });
+  const result = await response.text();
+  return c.json(result);
+}
+
 blogRouter.post("/reactions", async (c) => {
   try {
-
     const prisma = getPrismaClient(c, true);
-    
+
     const {
       blogId,
       like = 0,
@@ -439,16 +452,6 @@ blogRouter.post("/reactions", async (c) => {
       applause: number;
       smile: number;
     } = await c.req.json();
-    const id = c.env.Blog_DD.idFromName("03415b9c-825b-452a-9882-274c641adca2")
-    console.log(id)
-    const stub = c.env.Blog_DD.get(id)
-    const response = await stub.fetch('https://do/reaction',{
-      method:"POST",
-      body:JSON.stringify({blogId,like,applause,smile}),
-      headers:{"Content-Type":"application/json"}
-    })
-    const result = await response.text()
-    return c.json(result)
 
     batch.push({ blogId, like, applause, smile });
     console.log("Current batch:", batch);

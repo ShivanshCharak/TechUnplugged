@@ -23,21 +23,39 @@ export class BlogDD implements DurableObject {
       }
 
       case path === "/reaction" && method === "POST": {
-        const { like, smile, applause }: { like: number; smile: number; applause: number } =
+        const { likes, laugh, applause }: { likes: number; laugh: number; applause: number } =
           await request.json();
 
-        // Create a single object to store all reactions together
         const reactions = {
-          like,
-          smile,
+          likes,
+          laugh,
           applause,
         };
 
-        // Save entire object in one write
-        await this.state.storage.put("reactions", reactions);
-
+        let staleReactions:{likes:number,laugh:number,applause:number}|undefined = await this.state.storage.get("reactions")
+        if(staleReactions){
+          staleReactions.likes+=likes
+          staleReactions.applause+=applause
+          staleReactions.laugh+=laugh
+          
+        }
+        await this.state.storage.put("reactions", staleReactions);
+        console.log(await this.state.storage.get("reactions"))
+        
         return new Response(`Reactions updated: ${JSON.stringify(reactions)}`);
       }
+      case path === "/get-reactions" && method === "GET": {
+  const reactions = await this.state.storage.get<{ 
+    likes: number;
+    laugh: number;
+    applause: number;
+  }>("reactions");
+
+  return new Response(JSON.stringify(reactions || {}), {
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
 
       default:
         return new Response("Not found", { status: 404 });

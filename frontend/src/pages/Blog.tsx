@@ -5,11 +5,12 @@ import { Appbar } from "../components/Appbar";
 import { FullBlog } from "../components/blogs/FullBlog";
 import { Spinner } from "../components/Spinner";
 import { UseBlogReturn,Blog } from "../types";
-import { useBlog } from "../hooks";
+import { useBlog } from "../hooks/useGetBlogById";
 import { calculateWordCount, createExcerpt, createSlug } from "../utils/BlogsUtility";
 
 export const BlogLayout = () => {
   const { id } = useParams<{ id: string }>();
+
   const { loading, blog, error } = useBlog({
     id: id || ""
   });
@@ -85,20 +86,13 @@ export const BlogLayout = () => {
     excerpt: blog.excerpt || createExcerpt(blog.content || blog.body || ""),
     publishedDate: blog.publishedDate || blog.createdAt || new Date().toLocaleDateString(),
     createdAt: blog.createdAt || new Date().toISOString(),
-    updatedAt: blog.updatedAt || new Date().toISOString(),
-    author: {
-      id: String(blog.author?.id || blog.userId || "unknown"),
-      name: blog.author?.name || "Anonymous",
-      email: blog.author?.email
-    },
     isPublished: blog.isPublished ?? true,
     tags: blog.tags || [],
     views: blog.views || 0,
     likes: blog.likes || 0,
-    isDeleted: blog.isDeleted || false,
     wordCount: blog.wordCount || calculateWordCount(blog.content || blog.body || ""),
-    userId: String(blog.userId || blog.author?.id || "unknown"),
-    user: blog.user || blog.author,
+    userId: String(blog.user?.id || "unknown"),
+    user: blog.user || blog.user,
     comments: blog.comments || [],
     reactions: blog.reactions,
     _count: blog._count

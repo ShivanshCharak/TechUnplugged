@@ -2,6 +2,7 @@ import { Context } from "hono";
 import { getPrismaClient } from "../routes/blog";
 import { Blog } from "../types/types";
 import { DurableObject } from "cloudflare:workers";
+import { Env } from "../types/types";
 
 // Done
 /*
@@ -15,17 +16,25 @@ import { DurableObject } from "cloudflare:workers";
 */
 
 export async function onScheduled(c: Context) {
+
   console.log("Running scheduled job to refresh blog cache");
 
   const {recent,blog} = await BlogsProcessor(c);
-    await c.env.Blog_cache.put("hot", JSON.stringify(blog.map((b) => b.id)));
+  await c.env.Blog_cache.put("hot", JSON.stringify(blog.map((b) => b.id)));
+  
+ for (const doc of blog) {
+  const reactions = await fetchReactionsFromDO(c.env, doc.id);
+  await c.env.Blog_cache.put(
+    `blog:${doc.id}`,
+    JSON.stringify({ ...doc, reactions })
+  );
+}
 
-  for (const doc of blog) {
-        await c.env.Blog_cache.put(`blog:${doc.id}`, JSON.stringify(blog));
-      }
-      for (const doc of recent){
-        await c.env.Blog_cache.put(`recent`,doc)
-      }
+await c.env.Blog_cache.put("recent", JSON.stringify(recent));
+
+      // for (const doc of recent){
+     
+      
       console.log(await c.env.Blog_cache.get('recent'))
     console.log("Blog cache refreshed",);
 }
@@ -69,4 +78,17 @@ orderBy: { views: "desc" },
   
   return {recent,blog}
 
+}
+
+async function fetchReactionsFromDO(env: Env, blogId: string):Promise<{likes:number,applause:number,laugh:number}> {
+  const id = env.Blog_DD.idFromName(blogId);
+  const stub = env.Blog_DD.get(id);
+
+  const res = await stub.fetch("https://fake-url/get-reactions");
+  const data:{
+    likes:number,applause:number,laugh:number
+  } = await res.json();
+  console.log(data)
+  
+  return data;
 }
