@@ -6,9 +6,12 @@ import { draftRouter } from './routes/drafts';
 import { bookmarksRouter } from './routes/bookmarks';
 import {Redis} from '@upstash/redis/cloudflare'
 import { onScheduled } from './routes/blog';
-import { Context } from 'hono/jsx';
-// import { MyDurableObject } from './counter';
+import { BlogUpdateQueue } from './BlogQueue';
+import { BlogDD } from './BlogDo';
 
+
+// import { MyDurableObject } from './counter';
+export {BlogUpdateQueue,BlogDD} 
 
 export function getRedisClient(c: Context):Redis {
   return new Redis({
@@ -16,7 +19,6 @@ export function getRedisClient(c: Context):Redis {
     token: c.env.UPSTASH_REDIS_REST_TOKEN,
   });
 }
-
 
 const app = new Hono<{
   Bindings: {

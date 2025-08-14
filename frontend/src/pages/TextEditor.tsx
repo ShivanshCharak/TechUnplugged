@@ -6,12 +6,14 @@ import  './styles.css'
 
 
 
-export default function Tiptap({ onChange}: { onChange: (content: string) => void}) {
+export default function Tiptap({ onChange,description}: { onChange: (content: string) => void,description:string}) {
   const [height, setHeight] = useState('auto');
+  console.log(description)
   const [isLoading, setIsLoading] = useState(true);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const lineHeight = 28;
 
+  
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -24,12 +26,13 @@ export default function Tiptap({ onChange}: { onChange: (content: string) => voi
           keepAttributes: false,
         },
       }),
+    
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === 'heading') {
             return `What's the heading?`;
           }
-          return 'Start writing your story...';
+          return description;
         },
         includeChildren: true,
       }),
@@ -44,12 +47,18 @@ export default function Tiptap({ onChange}: { onChange: (content: string) => voi
     onUpdate: ({ editor }) => {
       adjustHeight();
       onChange(editor.getHTML());
+      console.log(onChange(editor.getHTML()))
     },
     onCreate: () => {
       setIsLoading(false);
     },
   });
 
+  useEffect(() => {
+  if (editor && description) {
+    editor.commands.setContent(description);
+  }
+}, [editor, description]);
   const adjustHeight = useCallback(() => {
     if (!editorRef.current) return;
 

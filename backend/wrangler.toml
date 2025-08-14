@@ -16,3 +16,17 @@ triggers = { crons = ["* * * * *"] }
 [[kv_namespaces]]
 binding = "Blog_cache"
 id = "7b7a2eb1fcaa43d19881d8dec6c97ab7"
+
+[[durable_objects.bindings]]
+name = "Blog_queue"
+class_name = "BlogUpdateQueue"
+
+[[durable_objects.bindings]]
+name = "Blog_DD"
+class_name = "BlogDD"
+
+
+# If you also want persistence:
+[[migrations]]
+tag = "v1"
+new_classes = ["BlogUpdateQueue","BlogDD"]

@@ -30,6 +30,7 @@ Brain stroming fragments of the backend
         "excerpt": "string|null",    // Short summary or null if absent
         "images": "string",          // URL of blog image
         "body": "string",            // HTML content of the blog
+        
         "createdAt": "string",       // ISO date string of creation timestamp
         "isDeleted": "boolean",      // Soft delete flag
         "isPublished": "boolean",    // Published status
@@ -49,3 +50,14 @@ Brain stroming fragments of the backend
             "bookmarks": "number"      // Number of bookmarks
         }
         }
+
+Schema
+* Designed a **relational, user-centric schema** with **cascading relations** for **automatic cleanup**.
+* Implemented **full-text search** for **efficient content retrieval**.
+* Used **materialized views** to **optimize read-heavy queries**.
+* Ensured **data integrity** with **ACID-compliant transactions**.
+
+
+# Cache updation
+- Cache is updating instantly as the new post created
+- and updating the syncing as well after every 4-5 minutes

@@ -4,7 +4,6 @@ import { calculateWordCount, createExcerpt, createSlug } from "../utils/BlogsUti
 
 
 export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"|"Featured"): UseBlogsReturn => {
-  console.log("render")
   const [loading, setLoading] = useState(true);
   const [blogs, setBlogs] = useState<Blog[]>([]);
   
