@@ -50,7 +50,6 @@ interface PublishResponse {
 export const Publish: React.FC = () => {
   const authContext = useContext(AuthContext);
   
-  // Handle potential null context
   if (!authContext) {
     throw new Error('Publish component must be used within an AuthProvider');
   }
@@ -117,28 +116,34 @@ export const Publish: React.FC = () => {
   }
   function handleBeforeUnload() {
     console.log("Saving draft before exit...");
-
-    navigator.sendBeacon(
-      "http://localhost:8787/api/v1/draft/create",
-      JSON.stringify({
-        userId: authData.id,
-        blog: {
-          title: titleRef.current,
-          description: descriptionRef.current,
-          isPublished: false,
-          imageUrl: preview || "image-1",
-        },
-      })
-    );
+    
+    if(title!=="Article Title..."|| description!=="<p>Type / for commands</p>"){
+      navigator.sendBeacon(
+        
+        "http://localhost:8787/api/v1/draft/create",
+        JSON.stringify({
+          userId: authData.id,
+          blog: {
+            title: titleRef.current,
+            description: descriptionRef.current,
+            isPublished: false,
+            imageUrl: preview || "image-1",
+          },
+        })
+      );
+      console.log(title,description)
+      console.log("title, description",title==="Article Title...", description==="<p>Type / for commands</p>")
+      console.log("hey")
+    }
   }
 
   window.addEventListener("beforeunload", handleBeforeUnload);
+  fetchDrafts();
 
   return () => {
     window.removeEventListener("beforeunload", handleBeforeUnload);
   };
 
-  fetchDrafts();
 }, [authData]);
 
 const titleRef = useRef(title);

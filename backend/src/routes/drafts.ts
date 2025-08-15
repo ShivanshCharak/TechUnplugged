@@ -90,8 +90,6 @@ draftRouter.delete("/", async (c) => {
   const {userId, draftId} =  c.req.query()
   console.log(c.req.query())
 
-  // how to get the userId and draft id
-  console.log("params",userId,draftId)
 
   const prisma = getPrismaClient(c, true);
   if (!draftId || !userId) {
@@ -141,7 +139,7 @@ draftRouter.get("/bulk/:userId", async (c) => {
       },
       include: { blog: true },
     });
-    console.log(data)
+    console.log("data",data)
 
     return c.json({ message: "Successfully fetched", data }, 200);
   } catch (error) {
