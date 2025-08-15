@@ -23,7 +23,7 @@ export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"
         if (filters.limit) queryParams.append('limit', filters.limit.toString());
         if (filters.offset) queryParams.append('offset', filters.offset.toString());
         const url = type==="Personalized"?`http://localhost:8787/api/v1/blog/bulk`:"http://localhost:8787/api/v1/blog/recent";
-        console.log(type,url)
+        console.log("type",type,url)
         console.log('Fetching from URL:', url);
 
         // Get token from localStorage

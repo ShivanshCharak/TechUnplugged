@@ -1,4 +1,9 @@
-    import { useState, useEffect, useContext } from 'react';
+
+/*
+  If want to add for the commend drafts bookmakrs uncomment set
+*/
+
+import { useState, useEffect, useContext } from 'react';
     import { set, get,del } from 'idb-keyval';
     import { useBeforeUnload } from 'react-router-dom';
     import { AuthContext } from '../utils/context/userContext';
@@ -115,13 +120,13 @@
         setDataLoaded(false);
       }, [blog.id]);
 
-      useBeforeUnload(() => {
-        if (Object.keys(blogDB).length > 0) {
-          console.log("Setting up PostReaction ",blogDB)
-          set("PostReactions", blogDB);
-          console.log('Saving on unload:', blogDB);
-        }
-      });
+      // useBeforeUnload(() => {
+      //   if (Object.keys(blogDB).length > 0) {
+      //     console.log("Setting up PostReaction ",blogDB)
+      //     set("PostReactions", blogDB);
+      //     console.log('Saving on unload:', blogDB);
+      //   }
+      // });
 
       useEffect(() => {
         const retryFailedSyncs = async () => {
@@ -221,7 +226,7 @@
             setBookmarkCount(prev => prev + 1);
           }
       console.log("Setting up PostReaction ",blogDB)
-          set("PostReactions", newDB);
+          // set("PostReactions", newDB);
           return newDB;
         });
 
@@ -243,7 +248,7 @@
             ensureBlogEntry(newDB, blog.id);
             newDB[blog.id].drafts.push(draft);
               console.log("Setting up PostReaction ",blogDB)
-            set("PostReactions", newDB);
+            // set("PostReactions", newDB);
             return newDB;
           });
 
@@ -260,7 +265,7 @@
           if (newDB[blog.id]) {
             newDB[blog.id].drafts = newDB[blog.id].drafts.filter(d => d.id !== draftId);
               console.log("Setting up PostReaction ",blogDB)
-            set("PostReactions", newDB);
+            // set("PostReactions", newDB);
           }
           return newDB;
         });
@@ -291,7 +296,7 @@
           if (!newDB[blog.id].comments.some(c => c.id === comment.id)) {
             newDB[blog.id].comments.push({ ...comment, _pendingSync: true });
               console.log("Setting up PostReaction ",blogDB)
-            set("PostReactions", newDB);
+            // set("PostReactions", newDB);
           }
 
           return newDB;
@@ -333,7 +338,7 @@
                 });
               }
               
-              set("PostReactions", newDB);
+              // set("PostReactions", newDB);
               return newDB;
             });
             
@@ -353,7 +358,7 @@
             if (idx !== -1) {
               newDB[blog.id].comments[idx]._syncFailed = true;
               newDB[blog.id].comments[idx]._pendingSync = false;
-              set("PostReactions", newDB);
+              // set("PostReactions", newDB);
             }
             
             return newDB;
@@ -387,7 +392,7 @@
         ensureBlogEntry(newDB, blog.id);
         if (!newDB[blog.id].comments.some(c => c.id === reply.id)) {
           newDB[blog.id].comments.push({ ...reply, _pendingSync: true });
-          set("PostReactions", newDB);
+          // set("PostReactions", newDB);
         }
         return newDB;
       });
@@ -419,7 +424,7 @@
               };
             }
             
-            set("PostReactions", newDB);
+            // set("PostReactions", newDB);
             return newDB;
           });
           
@@ -439,7 +444,7 @@
             newDB[blog.id].comments[idx]._syncFailed = true;
             newDB[blog.id].comments[idx]._pendingSync = false;
               console.log("Setting up PostReaction ",blogDB)
-            set("PostReactions", newDB);
+            // set("PostReactions", newDB);
           }
           
           return newDB;
@@ -458,7 +463,7 @@
 
             newDB[blog.id].comments = newDB[blog.id].comments.filter(c => c.id !== id);
               console.log("Setting up PostReaction ",blogDB)
-            set("PostReactions", newDB);
+            // set("PostReactions", newDB);
             return newDB;
           });
         };

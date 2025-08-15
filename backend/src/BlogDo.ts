@@ -23,39 +23,60 @@ export class BlogDD implements DurableObject {
       }
 
       case path === "/reaction" && method === "POST": {
-        const { likes, laugh, applause }: { likes: number; laugh: number; applause: number } =
+        const {
+          views,
+          likes,
+          laugh,
+          applause,
+        }: { views:number,likes: number; laugh: number; applause: number } =
           await request.json();
 
-        const reactions = {
+        const engagement = {
+          views,
           likes,
           laugh,
           applause,
         };
 
-        let staleReactions:{likes:number,laugh:number,applause:number}|undefined = await this.state.storage.get("reactions")
-        if(staleReactions){
-          staleReactions.likes+=likes
-          staleReactions.applause+=applause
-          staleReactions.laugh+=laugh
-          
+        let staleReactions:
+          | { views:number,likes: number; laugh: number; applause: number }
+          | undefined = (await this.state.storage.get("reactions"))??{
+            views:0,
+            likes:0,
+            applause:0,
+            laugh:0
+          };
+        if (staleReactions) {
+          staleReactions.views+=1;
+          staleReactions.likes += likes;
+          staleReactions.applause += applause;
+          staleReactions.laugh += laugh;
         }
+
         await this.state.storage.put("reactions", staleReactions);
-        console.log(await this.state.storage.get("reactions"))
-        
-        return new Response(`Reactions updated: ${JSON.stringify(reactions)}`);
+
+        return new Response(`Reactions updated: ${JSON.stringify(engagement)}`);
       }
-      case path === "/get-reactions" && method === "GET": {
-  const reactions = await this.state.storage.get<{ 
-    likes: number;
-    laugh: number;
-    applause: number;
-  }>("reactions");
+      case path === "/get-engagement" && method === "GET": {
+        // await this.state.storage.delete("reactions")
+        const reactions = (await this.state.storage.get<{
+          views:number,
+          likes: number;
+          laugh: number;
+          applause: number;
+        }>("reactions"))??{
+          views:0,
+           likes: 0,
+          laugh: 0,
+          applause: 0
+        }
+        // reactions.views+=1
+        await this.state.storage.put("reactions",reactions)
 
-  return new Response(JSON.stringify(reactions || {}), {
-    headers: { "Content-Type": "application/json" }
-  });
-}
-
+        return new Response(JSON.stringify(reactions || {}), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
       default:
         return new Response("Not found", { status: 404 });

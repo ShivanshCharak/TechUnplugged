@@ -34,14 +34,11 @@ draftRouter.post("/create", async (c) => {
     const { userId, blog } = reqBody;
     const prisma = getPrismaClient(c, true);
 
+    const slug = generateSlug(blog.title);
+    const wordCount = countWords(blog.description);
     await prisma.$transaction(async (tx) => {
-      const slug = generateSlug(blog.title);
-      const wordCount = countWords(blog.description);
-
       const existingBlog = await tx.blog.findUnique({ where: { slug } });
-
       let blogRecord;
-
       if (existingBlog) {
         blogRecord = await tx.blog.update({
           where: { slug },
