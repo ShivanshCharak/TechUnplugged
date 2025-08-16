@@ -1,9 +1,7 @@
 import crown from "../../assets/crown.svg";
 import person from "../../assets/person.svg";
 import wand from "../../assets/wand.svg";
-import { useState } from "react";
-import { useBlogs } from "../../hooks/useBlogs";
-import { Blogs } from "../../pages/Blogs";
+
 type BlogHeaderProps = {
   activeHeader: "Personalized" | "Recent" | "Featured";
   setActiveHeader: (category: "Personalized" | "Recent" | "Featured") => void;

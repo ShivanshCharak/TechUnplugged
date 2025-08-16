@@ -5,6 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 import { AuthContext } from '../utils/context/userContext';
 import { BACKEND_URL } from '../config';
 import {  useRef } from "react";
+import { SignalingManger } from '../wsClient';
 
 // Type definitions
 type UserData ={

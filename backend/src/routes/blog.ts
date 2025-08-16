@@ -3,10 +3,12 @@
 import { Hono, Context } from "hono";
 import { createBlogInput, updateBlogInput } from "@100xdevs/medium-common";
 import { PrismaClient } from "@prisma/client/edge";
+import { w } from "hono/jsx";
+
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Blog } from "../types/types";
 
-import { onScheduled } from "../DOSync/Caches";
+import { onScheduled } from "../DurableObjects/Caches";
 import consumer from "../consumer";
 import { raw } from "@prisma/client/runtime/library";
 interface Bindings {
@@ -18,6 +20,7 @@ interface Bindings {
   Blog_cache: KVNamespace;
   Blog_queue: DurableObjectNamespace;
   Blog_DD: DurableObjectNamespace;
+  Websocket_Server:DurableObjectNamespace
 }
 interface Variables {
   userId: string;
@@ -87,6 +90,7 @@ blogRouter.post("/create", async (c) => {
       },
     });
 
+
     await c.env.Blog_cache.put(`blog:${blog.id}`, JSON.stringify(blog));
 
     let rawIds = (await c.env.Blog_cache.get("recent")) ?? JSON.stringify([]);
@@ -95,6 +99,24 @@ blogRouter.post("/create", async (c) => {
     blogIds.push(blog.id);
 
     await c.env.Blog_cache.put("recent", JSON.stringify(blogIds));
+
+    const wsid = c.env.Websocket_Server.idFromName('global')
+    const stub  = c.env.Websocket_Server.get(wsid)
+    c.executionCtx.waitUntil(
+  (async () => {
+    const wsid = c.env.Websocket_Server.idFromName("global");
+    const stub = c.env.Websocket_Server.get(wsid);
+    await stub.fetch("http://fake:89/broadcast", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: blog.title,
+        user: blog.user,
+        slug: blog.slug,
+      }),
+    });
+  })()
+);
 
     return c.json({ id: blog.id, slug: blog.slug });
   } catch (error) {

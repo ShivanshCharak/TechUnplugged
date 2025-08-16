@@ -4,6 +4,7 @@ export interface Env{
   Blog_queue: DurableObjectNamespace<DurableObject>;
     Blog_cache: KVNamespace;
     Blog_DD: DurableObjectNamespace<DurableObject>
+    WebSocket_Server:DurableObjectNamespace<DurableObject>
 }
 export type UserBindings ={
   DATABASE_URL: string;

@@ -16,6 +16,8 @@ export const BlogLayout = () => {
   });
   console.log(blog)
 
+
+
   // Loading state
   if (loading) {
     return (
