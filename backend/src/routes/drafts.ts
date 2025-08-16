@@ -4,6 +4,10 @@ import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Draft, Blog } from "../types/types";
 import { generateSlug, countWords } from "./blog";
+import consumer from "../consumer";
+
+import { Env } from "hono";
+import { Context } from "hono";
 
 export const draftRouter = new Hono<{
   Bindings: {
@@ -26,95 +30,101 @@ export function getPrismaClient(c: any, useReplica: boolean = false) {
 
 draftRouter.post("/create", async (c) => {
   try {
-    let draftData: Draft = await c.req.json();
-    console.log(draftData);
+    const reqBody = await c.req.json();
+    const { userId, blog } = reqBody;
     const prisma = getPrismaClient(c, true);
+
+    const slug = generateSlug(blog.title);
+    const wordCount = countWords(blog.description);
     await prisma.$transaction(async (tx) => {
+      const existingBlog = await tx.blog.findUnique({ where: { slug } });
+      let blogRecord;
+      if (existingBlog) {
+        blogRecord = await tx.blog.update({
+          where: { slug },
+          data: {
+            title: blog.title,
+            body: blog.description,
+            images: blog.imageUrl,
+            wordCount,
+            isPublished: false
+          }
+        });
+      } else {
 
-      let body = draftData.Blog;
-      const slug = generateSlug(body.title);
-      const wordCount = countWords(body.body);
-      // IF User is aunthenticated  do this
-      const blog = await tx.blog.create({
-        data: {
-          title: draftData.Blog.title,
-          userId: draftData.Blog.userId,
-          slug: slug,
-          images: draftData.Blog.images,
-          body: draftData.Blog.body,
-          wordCount: wordCount,
-        },
-      });
-
-      if (!blog) {
-        console.error(
-          `Something went wrong while saving the blog. try Again ${draftData.userId}`
-        );
+        blogRecord = await tx.blog.create({
+          data: {
+            title: blog.title,
+            userId,
+            slug,
+            images: blog.imageUrl,
+            body: blog.description,
+            wordCount,
+            isPublished: false
+          }
+        });
       }
+      console.log(existingBlog)
 
-      const isDraftCreated = await tx.draft.create({
-        data: {
-          blogId: blog.id,
-          userId: draftData.userId,
-        },
+      const existingDraft = await tx.draft.findUnique({
+        where: { userId_blogId: { userId, blogId: blogRecord.id } }
       });
-      if (!isDraftCreated) {
-        console.error(
-          `Something went wrong while saving the draft. try Again ${draftData.userId}`
-        );
+      
+
+      if (!existingDraft) {
+        await tx.draft.create({
+          data: { userId, blogId: blogRecord.id }
+        });
       }
-      console.log(isDraftCreated);
     });
-    return c.json(
-      {
-        message: `Blog saved successfully`,
-      },
-      200
-    );
+
+    return c.json({ message: "Blog saved successfully" }, 200);
   } catch (error) {
-    return c.json(
-      {
-        message: `Something went wrong while saving ${error}`,
-      },
-      500
-    );
+    console.error(error);
+    return c.json({ message: `Something went wrong while saving: ${error}` }, 500);
   }
 });
 
-draftRouter.delete("/delete", async (c) => {
-  const { blogId, userId } = await c.req.json();
+
+draftRouter.delete("/", async (c) => {
+  const {userId, draftId} =  c.req.query()
+  console.log(c.req.query())
+
+
   const prisma = getPrismaClient(c, true);
-  if (!blogId && !userId) {
+  if (!draftId || !userId) {
     return c.json({ message: "Blogid and userid bith is required" }, 500);
   }
-
   try {
-    await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findFirst({
+
+      const user = await prisma.user.findFirst({
         where: {
           id: userId,
         },
       });
       if (!user) {
-        console.error({ message: "No user exist" }, 402);
+        throw new Error("No user found");
+
       }
-      const isDeleted = await tx.blog.update({
+      const draftData = await prisma.draft.findFirst({
+        where:{
+          id:draftId
+        }
+      })
+      if(!draftData?.blogId){
+        throw new Error("Blog id is undfined")
+      }
+      
+      const isDeleted = await prisma.blog.delete({
         where: {
-          id: blogId,
-        },
-        data: {
-          isDeleted: true,
-        },
+          id: draftData.blogId,
+        }
       });
-      if (!isDeleted) {
-        console.error({
-          message: `Blog ${blogId} Is not deleted something went wrong`,
-        });
-      }
-    });
-    return c.json({ message: `Blog with ${blogId} Deleted ` }, 200);
+      console.log(isDeleted)
+
+    return c.json({ message: `Blog with d} Deleted ` }, 200);
   } catch (error) {
-    return c.json({ message: `Draft deleted sucessfully${error}` }, 402);
+    return c.json({ message: `Draft not deleted sucessfully${error}` }, 500);
   }
 });
 draftRouter.get("/bulk/:userId", async (c) => {
@@ -129,7 +139,7 @@ draftRouter.get("/bulk/:userId", async (c) => {
       },
       include: { blog: true },
     });
-    console.log(data)
+    console.log("data",data)
 
     return c.json({ message: "Successfully fetched", data }, 200);
   } catch (error) {
@@ -188,47 +198,4 @@ draftRouter.get("/bulk/:userId", async (c) => {
   }
 });
 
-draftRouter.put("/update/:draftId", async (c) => {
-  const { body, userId, blogId } = await c.req.json();
-  const draftId = c.req.param("draftId");
 
-  if (!blogId || !body) {
-    return c.json({ message: "BlogId and body are required" }, 400);
-  }
-
-  const prisma = getPrismaClient(c);
-
-  try {
-    const slug = generateSlug(body.title);
-    const wordCount = countWords(body.content);
-
-    const blog = await prisma.$transaction(async (tx) => {
-      return tx.draft.update({
-        where: {
-          id: draftId,
-          userId: { equals: userId },
-        },
-        data: {
-          blog: {
-            update: {
-              title: body.title,
-              userId: body.userId,
-              slug,
-              images: body.images,
-              body: body.body,
-              wordCount,
-            },
-          },
-        },
-      });
-    });
-
-    return c.json({ blog });
-  } catch (error) {
-    console.error("Error updating blog:", error);
-    return c.json(
-      { message: `Error updating blog: ${(error as Error).message}` },
-      500
-    );
-  }
-});

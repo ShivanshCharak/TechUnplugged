@@ -6,9 +6,13 @@ import { draftRouter } from './routes/drafts';
 import { bookmarksRouter } from './routes/bookmarks';
 import {Redis} from '@upstash/redis/cloudflare'
 import { onScheduled } from './routes/blog';
-import { Context } from 'hono/jsx';
-// import { MyDurableObject } from './counter';
+import { BlogUpdateQueue } from './BlogQueue';
+import { WebSocketServer } from './DurableObjects/WebSocket';
+import { BlogDD } from './BlogDo';
 
+
+// import { MyDurableObject } from './counter';
+export {BlogUpdateQueue,BlogDD,WebSocketServer} 
 
 export function getRedisClient(c: Context):Redis {
   return new Redis({
@@ -17,14 +21,14 @@ export function getRedisClient(c: Context):Redis {
   });
 }
 
-
 const app = new Hono<{
   Bindings: {
     DATABASE_URL: string;
     JWT_SECRET: string;
     OPENAI_API_KEY:string;
     UPSTACK_REDIS_REST_URL:string,
-    UPSTASH_REDIS_REST_TOKEN:string
+    UPSTASH_REDIS_REST_TOKEN:string,
+    Websocket_Server: DurableObjectNamespace
   }
 }>();
 
@@ -40,7 +44,12 @@ app.route("/api/v1/user", userRouter);
 app.route("/api/v1/blog", blogRouter);
 app.route("/api/v1/draft", draftRouter);
 app.route("/api/v1/bookmark", bookmarksRouter);
-
+app.get("/ws", async (c) => {
+  console.log("Hello there")
+  const id = c.env.Websocket_Server.idFromName("global");
+  const obj = c.env.Websocket_Server.get(id);
+  return await obj.fetch(c.req.raw);
+});
 
 export default app
 // export {MyDurableObject}

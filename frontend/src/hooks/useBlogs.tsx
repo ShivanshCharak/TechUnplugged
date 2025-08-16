@@ -4,7 +4,6 @@ import { calculateWordCount, createExcerpt, createSlug } from "../utils/BlogsUti
 
 
 export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"|"Featured"): UseBlogsReturn => {
-  console.log("render")
   const [loading, setLoading] = useState(true);
   const [blogs, setBlogs] = useState<Blog[]>([]);
   
@@ -24,7 +23,7 @@ export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"
         if (filters.limit) queryParams.append('limit', filters.limit.toString());
         if (filters.offset) queryParams.append('offset', filters.offset.toString());
         const url = type==="Personalized"?`http://localhost:8787/api/v1/blog/bulk`:"http://localhost:8787/api/v1/blog/recent";
-        console.log(type,url)
+        console.log("type",type,url)
         console.log('Fetching from URL:', url);
 
         // Get token from localStorage
@@ -32,7 +31,6 @@ export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"
         if (!token) {
           throw new Error("Authentication token not found. Please log in again.");
         }
-
         const response = await fetch(url, {
           method: "GET",
           headers: {
@@ -104,21 +102,19 @@ export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"
         const transformedBlogs: Blog[] = blogsArray.map((blog: any) => {
           try {
             return {
-              id: String(blog.id || blog._id || Math.random().toString(36).substr(2, 9)),
+              id: String(blog.id),
               title: blog.title || "Untitled",
               content: blog.body || "",
               body: blog.body || "",
-              images: blog.images || blog.url || "",
-              url:  blog.images || "",
+              images: blog.images  || "",
+        
               slug: blog.slug || createSlug(blog.title || "", String(blog.id || "")),
               excerpt: blog.excerpt || createExcerpt(blog.body || ""),
-              publishedDate: blog.createdAt || new Date().toISOString(),
               createdAt: blog.createdAt || new Date().toISOString(),
-              updatedAt: blog.updatedAt || new Date().toISOString(),
               user: {
-                id: String(blog.author?.id || blog.authorId || blog.userId || "unknown"),
-                email: blog.user?.email,
-                name: blog.user?.firstname +" " +blog.user?.lastname
+                id: String(blog.userId || "unknown"),
+                email: blog.email,
+                name: blog.user.firstname +" " +blog.user.lastname
               },
               isPublished: blog.isPublished ?? true,
               tags: Array.isArray(blog.tags) ? blog.tags : [],
@@ -126,11 +122,10 @@ export const useBlogs = (filters: BlogsFilters = {},type:"Personalized"|"Recent"
               likes: Number(blog.likes) || 0,
               isDeleted: blog.isDeleted || false,
               wordCount: blog.wordCount || calculateWordCount(blog.content || blog.body || ""),
-              userId: String(blog.userId || "unknown"),
+           
     
               reactions: blog.reactions?blog.reactions:{likes:0,applause:0,smile:0} ,
               _count: blog._count || {
-                
                 reactions: Array.isArray(blog.reactions) ? blog.reactions.length : 0
               }
             };

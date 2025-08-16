@@ -19,7 +19,7 @@ model User {
   isDeleted   Boolean      @default(false)
 
 
-  userInfo    UserInfo?
+  userInfo    UserInfo?   
   bookmarks   Bookmark[]
   drafts      Draft[]
   followers   Engagement[] @relation("FollowersRelation")
@@ -54,7 +54,7 @@ model UserInfo {
   intro     String?
   tech      String?
   userId    String @unique
-  user      User   @relation(fields: [userId], references: [id])
+  user      User   @relation(fields: [userId], references: [id],onDelete: Cascade)
 
   @@index([userId])
 }
@@ -72,14 +72,13 @@ model Blog {
   wordCount    Int
   views        Int        @default(0)
   userId       String
-   searchVector Unsupported("tsvector")?
-  user         User       @relation(fields: [userId], references: [id])
-  comments     Comment[]
+
+  user         User       @relation(fields: [userId], references: [id],onDelete: Cascade)
+  comments     Comment[]  
   reactions    Reaction?
   tags         BlogTag[]
   bookmarks    Bookmark[]
   drafts       Draft[]
-  @@index([searchVector], type: Gin)
 }
 
 model Comment {
@@ -90,9 +89,9 @@ model Comment {
   createdAt DateTime   @default(now())
   replyToId String?
 
-  blog      Blog       @relation(fields: [blogId], references: [id])
-  user      User       @relation(fields: [userId], references: [id])
-  replyTo   Comment?   @relation("CommentReply", fields: [replyToId], references: [id])
+  blog      Blog       @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id],onDelete: Cascade)
+  replyTo   Comment?   @relation("CommentReply", fields: [replyToId], references: [id],onDelete: Cascade)
   replies   Comment[]  @relation("CommentReply")
   @@index([blogId])
   @@index([replyToId])
@@ -105,7 +104,7 @@ model Reaction {
   likes     Int      @default(0)
   applause  Int      @default(0)
   laugh     Int      @default(0)
-  blog      Blog     @relation(fields: [blogId], references: [id])
+  blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
   @@index([blogId])
 }
 
@@ -114,8 +113,8 @@ model Bookmark {
   userId  String
   blogId  String
 
-  user    User     @relation(fields: [userId], references: [id])
-  blog    Blog     @relation(fields: [blogId], references: [id])
+  user    User     @relation(fields: [userId], references: [id],onDelete: Cascade)
+  blog    Blog     @relation(fields: [blogId], references: [id],onDelete: Cascade)
 
   @@unique([userId, blogId])
   @@index([userId])
@@ -127,8 +126,8 @@ model Draft {
   userId  String
   blogId  String
 
-  user    User     @relation(fields: [userId], references: [id])
-  blog    Blog     @relation(fields: [blogId], references: [id])
+  user    User     @relation(fields: [userId], references: [id],onDelete: Cascade)
+  blog    Blog     @relation(fields: [blogId], references: [id],onDelete: Cascade)
 
   @@unique([userId, blogId])
 }

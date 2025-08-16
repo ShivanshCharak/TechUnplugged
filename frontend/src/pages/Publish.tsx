@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useContext, ChangeEvent } from 'react';
-import { Search, Plus, FileText, Settings, Home, Eye, Edit3, Upload, Save, ChevronDown, ChevronUp, MoreVertical, X } from 'lucide-react';
+import { Search, Plus, FileText, Settings, Home, Eye, Edit3, Upload, Save, ChevronDown, ChevronUp, MoreVertical, X,Trash } from 'lucide-react';
 import Tiptap from './TextEditor';
 import { jwtDecode } from 'jwt-decode';
 import { AuthContext } from '../utils/context/userContext';
 import { BACKEND_URL } from '../config';
+import {  useRef } from "react";
+import { SignalingManger } from '../wsClient';
 
 // Type definitions
-interface UserData {
+type UserData ={
   id: string;
   email?: string;
   name?: string;
@@ -14,19 +16,29 @@ interface UserData {
 }
 
 
-
 // Define the Tiptap component props interface
 
-interface Draft {
-  id: number;
+type Draft = {
+  id: string;
+  
   title: string;
-  isActive: boolean;
+  body?:string;
+  isActive?: boolean;
+  description?:string;
+
 }
 
 interface CloudinaryResponse {
   secure_url: string;
   public_id: string;
   [key: string]: any;
+}
+type TDraftRes= {
+  id:string,
+  blog:{
+    title:string,
+    body:string
+  }
 }
 
 interface PublishResponse {
@@ -39,7 +51,6 @@ interface PublishResponse {
 export const Publish: React.FC = () => {
   const authContext = useContext(AuthContext);
   
-  // Handle potential null context
   if (!authContext) {
     throw new Error('Publish component must be used within an AuthProvider');
   }
@@ -48,30 +59,107 @@ export const Publish: React.FC = () => {
   
   const [description, setDescription] = useState<string>("Type / for commands");
   const [title, setTitle] = useState<string>("Article Title...");
-  const [selectedDraft, setSelectedDraft] = useState<string>("Untitled");
+  const [activeDraft,setActiveDraft] = useState<Draft>()
+ 
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
   const [submittedExpanded, setSubmittedExpanded] = useState<boolean>(false);
   const [myDraftsExpanded, setMyDraftsExpanded] = useState<boolean>(true);
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
+  const [drafts,setDrafts] = useState<TDraftRes[]|undefined>()
+  
+
+
 
   useEffect(() => {
+    console.log("rendering")
     async function getUserData(): Promise<void> {
       try {
         const item = localStorage.getItem("accessToken");
+        console.log("item",item)
         if (item) {
           const userData = jwtDecode<UserData>(item);
+          console.log("userdata",userData)
           setAuthData(userData);
+          console.log("authdata",authData)
         }
       } catch (error) {
         console.error("Error decoding token:", error);
       }
     }
     getUserData();
-  }, [setAuthData]);
-  
+  }, []);
+  useEffect(() => {
+  if (!authData || !authData.id) return;
+
+  async function fetchDrafts() {
+    try {
+      const response = await fetch(`http://localhost:8787/api/v1/draft/bulk/${authData.id}`, {
+        method: "GET",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const draftData = await response.json();
+
+      const draft = draftData.data.map((val: TDraftRes) => ({
+        id: val.id,
+        title: val.blog.title,
+        body: val.blog.body,
+      }));
+
+      setDrafts(draft);
+      console.log("drafts", draft);
+    } catch (error) {
+      console.error("Something went wrong fetching drafts", error);
+    }
+  }
+  function handleBeforeUnload() {
+    console.log("Saving draft before exit...");
+    
+    if(title!=="Article Title..."|| description!=="<p>Type / for commands</p>"){
+      navigator.sendBeacon(
+        
+        "http://localhost:8787/api/v1/draft/create",
+        JSON.stringify({
+          userId: authData.id,
+          blog: {
+            title: titleRef.current,
+            description: descriptionRef.current,
+            isPublished: false,
+            imageUrl: preview || "image-1",
+          },
+        })
+      );
+      console.log(title,description)
+      console.log("title, description",title==="Article Title...", description==="<p>Type / for commands</p>")
+      console.log("hey")
+    }
+  }
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  fetchDrafts();
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+
+}, [authData]);
+
+const titleRef = useRef(title);
+const descriptionRef = useRef(description);
+
+// Keep refs updated on every state change
+useEffect(() => {
+  titleRef.current = title;
+}, [title]);
+
+useEffect(() => {
+  descriptionRef.current = description;
+}, [description]);
+
+// Attach beforeunload listener only once
   // File upload handler
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0];
@@ -118,7 +206,18 @@ export const Publish: React.FC = () => {
     }
   };
 
-  console.log(authData);
+  // Handing Draft values
+  function handleDraft(draft:Draft){
+    setActiveDraft({
+      id:draft.id,
+      description:draft.description,
+      isActive:true,
+      title:draft.description
+    })
+    setTitle(draft.title)
+    setDescription(draft.body)
+    console.log(draft.title,draft.body)
+  }
 
   // Publish post
   const handlePublish = async (): Promise<void> => {
@@ -173,26 +272,26 @@ export const Publish: React.FC = () => {
       setIsPublishing(false);
     }
   };
+  const handleDelete = async():Promise<void>=>{
+    await fetch(`http://localhost:8787/api/v1/draft?userId=${authData.id}&draftId=${activeDraft.id}`, {
+  method: "DELETE",
+}).then(async(res)=>{
+      // toastify if want to
+      // 
+      const deletedRes:Response =  await res.json()
+      if(deletedRes.status===200){
+        setDescription("Type / to start")
+        setTitle("Add Title")
+      }
+
+    })
+  }
 
   // Sample drafts data
-  const drafts: Draft[] = [
-    { id: 1, title: "Untitled", isActive: true },
-    { id: 2, title: "Relational Databases and IS...", isActive: false },
-    { id: 3, title: "LLMs", isActive: false },
-    { id: 4, title: "Basics of Javascript", isActive: false },
-    { id: 5, title: "AWS CloudWatch", isActive: false },
-    { id: 6, title: "AWS CI/CD", isActive: false },
-    { id: 7, title: "AWS CLI", isActive: false },
-    { id: 8, title: "AWS S3 Bucket", isActive: false },
-    { id: 9, title: "Git and Github", isActive: false },
-    { id: 10, title: "Continuous Integration", isActive: false },
-    { id: 11, title: "Kubernetes", isActive: false },
-    { id: 12, title: "Ansible", isActive: false },
-  ];
 
-  const filteredDrafts = drafts.filter((draft: Draft) => 
+  const filteredDrafts = drafts?.filter((draft: Draft) => 
     draft.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  )??[];
 
   return (
     <div className="flex h-screen bg-zinc-950 text-white">
@@ -267,7 +366,7 @@ export const Publish: React.FC = () => {
                 {filteredDrafts.map((draft: Draft) => (
                   <button
                     key={draft.id}
-                    onClick={() => setSelectedDraft(draft.title)}
+                    onClick={() => handleDraft(draft)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                       draft.isActive 
                         ? 'bg-gray-800 text-white' 
@@ -309,15 +408,15 @@ export const Publish: React.FC = () => {
             <span>/</span>
             <span>Drafts</span>
             <span>/</span>
-            <span className="text-white">{selectedDraft}</span>
+            <span className="text-white">{activeDraft?.title??"Untitled"}</span>
           </div>
           <div className="flex items-center space-x-3">
             <button 
-              onClick={() => setIsPreviewMode(!isPreviewMode)}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+              onClick={() => handleDelete()}
+              className="flex items-center space-x-2 px-4 py-2 bg-red-800 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
             >
-              <Eye className="w-4 h-4" />
-              <span>Preview</span>
+              <Trash className="outline-red-500 w-4 h-4" />
+              <span>Delete</span>
             </button>
             <button 
               onClick={handlePublish}
@@ -327,6 +426,7 @@ export const Publish: React.FC = () => {
               <Save className="w-4 h-4" />
               <span>{isPublishing ? 'Publishing...' : 'Publish'}</span>
             </button>
+            
           </div>
         </div>
 
@@ -378,7 +478,7 @@ export const Publish: React.FC = () => {
                 className="w-full text-5xl font-bold bg-transparent border-none outline-none text-gray-300 placeholder-gray-600"
                 placeholder="Article Title..."
               />
-              <Tiptap onChange={setDescription} />
+              <Tiptap onChange={setDescription} description={description} />
             </div>
           </div>
         </div>

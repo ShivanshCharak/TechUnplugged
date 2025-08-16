@@ -1,4 +1,11 @@
+import { DurableObject } from "cloudflare:workers";
 
+export interface Env{
+  Blog_queue: DurableObjectNamespace<DurableObject>;
+    Blog_cache: KVNamespace;
+    Blog_DD: DurableObjectNamespace<DurableObject>
+    WebSocket_Server:DurableObjectNamespace<DurableObject>
+}
 export type UserBindings ={
   DATABASE_URL: string;
   JWT_SECRET: string;
@@ -51,18 +58,35 @@ export type UserResponse= {
 
 export type Draft= {
   userId: string,
-  blogId: string,
-  Blog: Blog
+  blogId?: string,
+  blog: Blog
   
 }
 export type Blog={
    title: string,
     slug: string,
     excerpt: string|null,
-        body:string, 
-        images: string,
+        description:string, 
+        imageUrl: string,
         userId:string, 
         wordCount:string,
         isPublished: boolean,
   
+}
+export type comment={
+  id:string,
+  blogId:string,
+  userId:string,
+  content:string,
+  createdAt: string,
+  replToId: string,
+  user: User
+}
+export type User={
+   id:string,
+  firstname:string,
+  lastname:string,
+  email:string,
+  password:string,
+  createdAt:string  
 }

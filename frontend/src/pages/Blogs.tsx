@@ -4,7 +4,9 @@ import { Appbar } from "../components/Appbar";
 import { BlogAside } from "../components/blogs/BlogAside";
 import { BlogCard } from "../components/blogs/BlogCard";
 import BlogHeader from "../components/blogs/BlogHeader";
+import { TnotifData } from "../utils/context/notificationContext";
 import { BlogSkeleton } from "../components/blogs/BlogSkeleton";
+import { SignalingManger } from "../wsClient";
 import {
   Author,
   Blog,
@@ -17,13 +19,17 @@ import { BlogStats } from "../components/blogs/BlogStats";
 import { Smile, Heart, HandshakeIcon, Eye } from "lucide-react";
 import { SearchFilters } from "../components/SearchFilters";
 import { getReadingTime, formatDate } from "../utils/BlogsUtility";
+import { useContext } from "react";
+import { NotificationContext } from "../utils/context/notificationContext";
+import { SignalingManager } from "../wsClient";
 
 
 /**
  *  MAIN BLOG
  *
- */
+*/
 export const Blogs = (category:"Personalized"|"Recent"|"Featured"="Personalized") => {
+  const { setNotifData } = useContext(NotificationContext);
   const [filters, setFilters] = useState<BlogsFilters>({
     sortBy: "newest",
     limit: 10,
@@ -32,11 +38,20 @@ export const Blogs = (category:"Personalized"|"Recent"|"Featured"="Personalized"
   const [activeHeader, setActiveHeader] = useState<"Personalized"|"Recent"|"Featured">("Personalized");
 
   const { loading, blogs, error } = useBlogs(filters,activeHeader);
-  console.log("blogs",blogs,category)
-  console.log("blogs", blogs);
-  console.log("ractions", blogs[0]);
-  
-  
+
+  useEffect(() => {
+    const signaling = SignalingManager.getInstance();
+
+    signaling.setOnMessage((msg:TnotifData) => {
+      setNotifData(prev=>{
+        let arr:Array<TnotifData> =prev
+        arr.push(msg)
+        return arr
+      });
+      
+      console.log(msg)
+    });
+  }, []);
   const stats = {
     totalBlogs: blogs.length,
     totalAuthors: new Set(blogs.map((blog) => blog.user.id)).size,
@@ -49,15 +64,15 @@ export const Blogs = (category:"Personalized"|"Recent"|"Featured"="Personalized"
   const availableTags = Array.from(
     new Set(blogs.flatMap((blog) => blog.tags || []))
   ).sort();
-
+  
   const handleSearch = (query: string) => {
     setFilters((prev) => ({ ...prev, search: query, offset: 0 }));
   };
-
+  
   const handleTagFilter = (tags: string[]) => {
     setFilters((prev) => ({ ...prev, tags, offset: 0 }));
   };
-
+  
   const handleSortChange = (
     sortBy: "newest" | "oldest" | "popular" | "trending"
   ) => {
